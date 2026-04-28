@@ -24,8 +24,16 @@ module.exports = {
     }
 
     const ns = args.namespace;
-    const startTime = Date.now();
+    const cacheKey = `${tenant.name}:${ns}:api_security`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await say({ blocks: cached.blocks });
+        return;
+      }
+    }
 
+    const startTime = Date.now();
     const lbData = await tenant.client.get(`/api/config/namespaces/${ns}/http_loadbalancers`);
     const lbs = lbData.items || [];
 
@@ -52,6 +60,7 @@ module.exports = {
       formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
     ];
 
+    cache.set(cacheKey, { blocks }, 300);
     await say({ blocks });
   },
 };

@@ -1,7 +1,7 @@
 module.exports = {
   meta: {
     name: 'origin-health',
-    description: 'Health check status for origin pool servers',
+    description: 'Configured origin servers for an origin pool',
     slashCommand: '/xc-origins',
     cacheTTL: 300,
     category: 'app-delivery',
@@ -30,34 +30,49 @@ module.exports = {
 
     const ns = args.namespace;
     const name = args.resourceName;
+    const cacheKey = `${tenant.name}:${ns}:origin_pool:${name}`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await renderOrigins(say, formatter, name, ns, cached, true);
+        return;
+      }
+    }
+
     const startTime = Date.now();
     const pool = await tenant.client.get(`/api/config/namespaces/${ns}/origin_pools/${name}`);
     const servers = pool.spec?.origin_servers || [];
+    cache.set(cacheKey, servers, 300);
 
-    if (servers.length === 0) {
-      await say({ blocks: formatter.errorBlock(`Origin pool \`${name}\` has no configured servers.`) });
-      return;
-    }
-
-    const lines = servers.map((srv) => {
-      let addr = 'unknown';
-      if (srv.public_ip?.ip) addr = srv.public_ip.ip;
-      else if (srv.private_ip?.ip) addr = srv.private_ip.ip;
-      else if (srv.public_name?.dns_name) addr = srv.public_name.dns_name;
-      else if (srv.private_name?.dns_name) addr = srv.private_name.dns_name;
-      else if (srv.k8s_service?.service_name) addr = srv.k8s_service.service_name;
-
-      const site = srv.site_locator?.site?.name || '';
-      const detail = site ? `${addr} (${site})` : addr;
-      return formatter.statusLine('healthy', detail, '');
-    });
-
-    const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `🏥 Origin Pool: ${name} — ${ns}` } },
-      { type: 'section', text: { type: 'mrkdwn', text: lines.join('\n') } },
-      formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
-    ];
-
-    await say({ blocks });
+    await renderOrigins(say, formatter, name, ns, servers, false, Date.now() - startTime);
   },
 };
+
+async function renderOrigins(say, formatter, name, ns, servers, cached, durationMs) {
+  if (servers.length === 0) {
+    await say({ blocks: formatter.errorBlock(`Origin pool \`${name}\` has no configured servers.`) });
+    return;
+  }
+
+  const lines = servers.map((srv) => {
+    let addr = 'unknown';
+    let type = '';
+    if (srv.public_ip?.ip) { addr = srv.public_ip.ip; type = 'public_ip'; }
+    else if (srv.private_ip?.ip) { addr = srv.private_ip.ip; type = 'private_ip'; }
+    else if (srv.public_name?.dns_name) { addr = srv.public_name.dns_name; type = 'dns'; }
+    else if (srv.private_name?.dns_name) { addr = srv.private_name.dns_name; type = 'dns'; }
+    else if (srv.k8s_service?.service_name) { addr = srv.k8s_service.service_name; type = 'k8s'; }
+
+    const site = srv.site_locator?.site?.name || '';
+    const detail = [type, site].filter(Boolean).join(' · ');
+    return `*${addr}*  ${detail}`;
+  });
+
+  const blocks = [
+    { type: 'header', text: { type: 'plain_text', text: `🏥 Origin Pool: ${name} — ${ns}` } },
+    { type: 'section', text: { type: 'mrkdwn', text: `_Configured origins (${servers.length}):_\n` + lines.join('\n') } },
+    formatter.footer({ durationMs, cached, namespace: ns }),
+  ];
+
+  await say({ blocks });
+}

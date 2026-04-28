@@ -30,41 +30,55 @@ module.exports = {
 
     const ns = args.namespace;
     const name = args.resourceName;
-    const startTime = Date.now();
-    const lb = await tenant.client.get(`/api/config/namespaces/${ns}/http_loadbalancers/${name}`);
-    const spec = lb.spec || {};
-
-    const domains = (spec.domains || []).join(', ') || 'none';
-    const advertise = spec.advertise_on_public_default_vip ? 'Public (default VIP)'
-      : spec.advertise_on_public ? 'Public (custom)'
-      : spec.advertise_custom ? 'Custom'
-      : 'Private';
-
-    const waf = spec.app_firewall ? spec.app_firewall.name : (spec.disable_waf ? 'Disabled' : 'None');
-    const botDefense = spec.bot_defense ? 'Enabled' : 'Disabled';
-    const pools = (spec.default_route_pools || []).map((p) => p.pool?.name).filter(Boolean);
-    const routeCount = (spec.routes || []).length;
-
-    const fields = [
-      { label: 'Namespace', value: ns },
-      { label: 'Domains', value: domains },
-      { label: 'Advertise', value: advertise },
-      { label: 'WAF', value: waf },
-      { label: 'Bot Defense', value: botDefense },
-      { label: 'Default Pools', value: pools.join(', ') || 'none' },
-      { label: 'Routes', value: String(routeCount) },
-    ];
-
-    if (spec.active_service_policies?.policies?.length) {
-      const policyNames = spec.active_service_policies.policies.map((p) => p.name);
-      fields.push({ label: 'Service Policies', value: policyNames.join(', ') });
+    const cacheKey = `${tenant.name}:${ns}:http_loadbalancer:${name}`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await renderLb(say, formatter, ns, name, cached, true);
+        return;
+      }
     }
 
-    const blocks = [
-      ...formatter.detailView(`🔷 ${lb.metadata?.name || name}`, fields),
-      formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
-    ];
-
-    await say({ blocks });
+    const startTime = Date.now();
+    const lb = await tenant.client.get(`/api/config/namespaces/${ns}/http_loadbalancers/${name}`);
+    cache.set(cacheKey, lb, 300);
+    await renderLb(say, formatter, ns, name, lb, false, Date.now() - startTime);
   },
 };
+
+async function renderLb(say, formatter, ns, name, lb, cached, durationMs) {
+  const spec = lb.spec || {};
+
+  const domains = (spec.domains || []).join(', ') || 'none';
+  const advertise = spec.advertise_on_public_default_vip ? 'Public (default VIP)'
+    : spec.advertise_on_public ? 'Public (custom)'
+    : spec.advertise_custom ? 'Custom'
+    : 'Private';
+
+  const waf = spec.app_firewall ? spec.app_firewall.name : (spec.disable_waf ? 'Disabled' : 'None');
+  const botDefense = spec.bot_defense ? 'Enabled' : 'Disabled';
+  const pools = (spec.default_route_pools || []).map((p) => p.pool?.name).filter(Boolean);
+  const routeCount = (spec.routes || []).length;
+
+  const fields = [
+    { label: 'Namespace', value: ns },
+    { label: 'Domains', value: domains },
+    { label: 'Advertise', value: advertise },
+    { label: 'WAF', value: waf },
+    { label: 'Bot Defense', value: botDefense },
+    { label: 'Default Pools', value: pools.join(', ') || 'none' },
+    { label: 'Routes', value: String(routeCount) },
+  ];
+
+  if (spec.active_service_policies?.policies?.length) {
+    const policyNames = spec.active_service_policies.policies.map((p) => p.name);
+    fields.push({ label: 'Service Policies', value: policyNames.join(', ') });
+  }
+
+  const blocks = [
+    ...formatter.detailView(`🔷 ${lb.metadata?.name || name}`, fields),
+    formatter.footer({ durationMs, cached, namespace: ns }),
+  ];
+
+  await say({ blocks });
+}

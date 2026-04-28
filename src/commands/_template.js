@@ -11,6 +11,7 @@ module.exports = {
     description: 'One-line description shown in /xc-help',
     slashCommand: '/xc-yourcommand', // optional — remove if NL-only
     cacheTTL: 300, // optional — seconds. 0 or omit = no caching
+    category: 'core', // grouping in /xc-help
   },
 
   // Training utterances for NLP.js (5-10 per intent).
@@ -20,14 +21,12 @@ module.exports = {
     { utterance: 'example phrase two', intent: 'your.intent' },
   ],
 
-  // Entity types this command uses. Namespace is handled globally.
-  entities: [],
-
-  // Handler receives: { tenant, cache, say, args, formatter }
+  // Handler receives: { tenant, cache, say, client, args, formatter, aiAssistant }
   // - tenant.client: XCClient instance for API calls
-  // - cache: Cache instance
+  // - cache: Cache instance (use get/set with your cacheTTL)
   // - say: Slack say() function
-  // - args: { namespace, resourceName, resourceType, fresh, raw }
+  // - client: Slack WebClient (for files.uploadV2, etc.)
+  // - args: { namespace, resourceName, resourceType, fresh, raw, _channelId }
   // - formatter: slack-formatter module
   handler: async ({ tenant, cache, say, args, formatter }) => {
     // Your implementation here

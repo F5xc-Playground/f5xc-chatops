@@ -71,6 +71,8 @@ module.exports = {
   },
 };
 
+const MAX_DISPLAY_ITEMS = 20;
+
 async function renderList(say, formatter, resourceType, namespace, items, cached, durationMs) {
   if (items.length === 0) {
     await say({
@@ -82,13 +84,18 @@ async function renderList(say, formatter, resourceType, namespace, items, cached
     return;
   }
 
-  const rows = items.map((item) => ({
+  const displayed = items.slice(0, MAX_DISPLAY_ITEMS);
+  const rows = displayed.map((item) => ({
     name: item.name || item.metadata?.name || 'unknown',
     labels: Object.keys(item.labels || item.metadata?.labels || {}).length,
   }));
 
+  const title = items.length > MAX_DISPLAY_ITEMS
+    ? `📋 ${resourceType} — ${namespace} (showing ${MAX_DISPLAY_ITEMS} of ${items.length})`
+    : `📋 ${resourceType} — ${namespace}`;
+
   const blocks = [
-    { type: 'header', text: { type: 'plain_text', text: `📋 ${resourceType} — ${namespace}` } },
+    { type: 'header', text: { type: 'plain_text', text: title } },
     { type: 'section', text: { type: 'mrkdwn', text: formatter.table(['name', 'labels'], rows) } },
     formatter.footer({ durationMs, cached, namespace }),
   ];

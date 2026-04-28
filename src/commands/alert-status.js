@@ -24,8 +24,16 @@ module.exports = {
     }
 
     const ns = args.namespace;
-    const startTime = Date.now();
+    const cacheKey = `${tenant.name}:${ns}:alert_status`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await say({ blocks: cached.blocks });
+        return;
+      }
+    }
 
+    const startTime = Date.now();
     const [policyData, receiverData] = await Promise.all([
       tenant.client.get(`/api/config/namespaces/${ns}/alert_policys`).catch(() => ({ items: [] })),
       tenant.client.get(`/api/config/namespaces/${ns}/alert_receivers`).catch(() => ({ items: [] })),
@@ -56,6 +64,7 @@ module.exports = {
     }
 
     blocks.push(formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }));
+    cache.set(cacheKey, { blocks }, 300);
     await say({ blocks });
   },
 };

@@ -29,13 +29,20 @@ module.exports = {
 
     const ns = args.namespace;
     const name = args.resourceName;
-    const startTime = Date.now();
+    const cacheKey = `${tenant.name}:${ns}:bot_defense:${name}`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await say({ blocks: cached.blocks });
+        return;
+      }
+    }
 
+    const startTime = Date.now();
     const lb = await tenant.client.get(`/api/config/namespaces/${ns}/http_loadbalancers/${name}`);
     const spec = lb.spec || {};
 
     const enabled = !!spec.bot_defense;
-    const status = enabled ? 'healthy' : 'unknown';
 
     const fields = [
       { label: 'LB', value: name },
@@ -51,6 +58,7 @@ module.exports = {
       formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
     ];
 
+    cache.set(cacheKey, { blocks }, 300);
     await say({ blocks });
   },
 };

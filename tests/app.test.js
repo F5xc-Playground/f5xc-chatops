@@ -1,4 +1,4 @@
-const { buildConfig, validateEnv } = require('../src/app');
+const { buildConfig, validateEnv, formatApiError } = require('../src/app');
 
 describe('validateEnv', () => {
   test('throws if F5XC_API_URL is missing', () => {
@@ -61,10 +61,43 @@ describe('buildConfig', () => {
       CACHE_WARM_TTL: '120',
       CACHE_STATIC_TTL: '7200',
       NLP_THRESHOLD: '0.8',
+      PORT: '8080',
     });
     expect(config.logLevel).toBe('debug');
     expect(config.cacheWarmTTL).toBe(120);
     expect(config.cacheStaticTTL).toBe(7200);
     expect(config.nlpThreshold).toBe(0.8);
+    expect(config.port).toBe(8080);
+  });
+});
+
+describe('formatApiError', () => {
+  test('returns auth message for 401', () => {
+    const err = new Error('test');
+    err.status = 401;
+    expect(formatApiError(err, 'test')).toContain('Authentication failed');
+  });
+
+  test('returns permission message for 403', () => {
+    const err = new Error('test');
+    err.status = 403;
+    expect(formatApiError(err, 'test')).toContain('Permission denied');
+  });
+
+  test('returns not found message for 404', () => {
+    const err = new Error('test');
+    err.status = 404;
+    expect(formatApiError(err, 'test')).toContain('not found');
+  });
+
+  test('returns server error message for 500+', () => {
+    const err = new Error('test');
+    err.status = 502;
+    expect(formatApiError(err, 'test')).toContain('server error');
+  });
+
+  test('returns generic message for unknown errors', () => {
+    const err = new Error('something broke');
+    expect(formatApiError(err, 'test')).toContain('something broke');
   });
 });

@@ -54,6 +54,7 @@ class XCClient {
         clearTimeout(timer);
       }
     }
+    throw new Error(`XC API ${method} ${path} failed after ${MAX_RETRIES} retries`);
   }
 
   _sleep(ms) {

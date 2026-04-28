@@ -57,21 +57,29 @@ class NLPEngine {
 
     const lowerText = text.toLowerCase();
     for (const ns of this._namespaces) {
+      const nsLower = ns.toLowerCase();
       const nsPatterns = [
-        `in namespace ${ns}`,
-        `in ns ${ns}`,
-        `namespace ${ns}`,
-        `ns ${ns}`,
-        ` in ${ns}`,
-        ` ${ns}`,
+        `in namespace ${nsLower}`,
+        `in ns ${nsLower}`,
+        `namespace ${nsLower}`,
+        `ns ${nsLower}`,
+        ` in ${nsLower}`,
       ];
       for (const pattern of nsPatterns) {
-        if (lowerText.includes(pattern.toLowerCase())) {
+        if (lowerText.includes(pattern)) {
           entities.namespace = ns;
           break;
         }
       }
       if (entities.namespace) break;
+      // Word-boundary match as fallback for longer namespace names (4+ chars)
+      if (nsLower.length >= 4) {
+        const regex = new RegExp(`\\b${nsLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+        if (regex.test(lowerText)) {
+          entities.namespace = ns;
+          break;
+        }
+      }
     }
 
     for (const rt of this._resourceTypes) {

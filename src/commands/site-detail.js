@@ -23,6 +23,15 @@ module.exports = {
       return;
     }
 
+    const cacheKey = `${tenant.name}:system:site:${name}`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await say({ blocks: cached.blocks });
+        return;
+      }
+    }
+
     const startTime = Date.now();
     const site = await tenant.client.get(`/api/config/namespaces/system/sites/${name}`);
     const spec = site.spec || {};
@@ -44,6 +53,7 @@ module.exports = {
       formatter.footer({ durationMs: Date.now() - startTime, cached: false }),
     ];
 
+    cache.set(cacheKey, { blocks }, 300);
     await say({ blocks });
   },
 };

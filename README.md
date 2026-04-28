@@ -106,3 +106,4 @@ The bot auto-discovers all `.js` files in `src/commands/` on startup.
 | `CACHE_WARM_TTL` | No | Warm cache TTL seconds (default: `300`) |
 | `CACHE_STATIC_TTL` | No | Static cache TTL seconds (default: `3600`) |
 | `NLP_THRESHOLD` | No | NLP confidence threshold (default: `0.65`) |
+| `PORT` | No | Health endpoint port (default: `3000`) |

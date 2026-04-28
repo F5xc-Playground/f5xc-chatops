@@ -29,18 +29,26 @@ module.exports = {
 
     const ns = args.namespace;
     const name = args.resourceName;
-    const startTime = Date.now();
+    const cacheKey = `${tenant.name}:${ns}:policies:${name}`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await say({ blocks: cached.blocks });
+        return;
+      }
+    }
 
+    const startTime = Date.now();
     const lb = await tenant.client.get(`/api/config/namespaces/${ns}/http_loadbalancers/${name}`);
     const spec = lb.spec || {};
 
     if (spec.service_policies_from_namespace) {
-      await say({
-        blocks: [
-          { type: 'section', text: { type: 'mrkdwn', text: `🛡️ LB \`${name}\` uses *namespace-level service policies* from \`${ns}\`.` } },
-          formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
-        ],
-      });
+      const blocks = [
+        { type: 'section', text: { type: 'mrkdwn', text: `🛡️ LB \`${name}\` uses *namespace-level service policies* from \`${ns}\`.` } },
+        formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
+      ];
+      cache.set(cacheKey, { blocks }, 300);
+      await say({ blocks });
       return;
     }
 
@@ -66,6 +74,7 @@ module.exports = {
       formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
     ];
 
+    cache.set(cacheKey, { blocks }, 300);
     await say({ blocks });
   },
 };

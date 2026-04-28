@@ -28,8 +28,9 @@ class Cache {
   }
 
   invalidate(pattern) {
+    const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(
-      '^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$'
+      '^' + escaped.replace(/\*/g, '.*').replace(/\?/g, '.') + '$'
     );
     for (const key of this._store.keys()) {
       if (regex.test(key)) {

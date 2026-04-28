@@ -25,43 +25,57 @@ module.exports = {
     }
 
     const ns = args.namespace;
-    const startTime = Date.now();
-    const lbData = await tenant.client.get(`/api/config/namespaces/${ns}/http_loadbalancers`);
-    const lbs = lbData.items || [];
-
-    const certLines = [];
-    for (const lb of lbs) {
-      const name = lb.name || lb.metadata?.name;
-      const timestamps = lb.spec?.downstream_tls_certificate_expiration_timestamps || {};
-      for (const [domain, expiry] of Object.entries(timestamps)) {
-        const expDate = new Date(expiry);
-        const now = new Date();
-        const daysLeft = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
-
-        let status;
-        if (daysLeft < 0) status = 'expired';
-        else if (daysLeft < 30) status = 'expiring';
-        else status = 'valid';
-
-        const detail = daysLeft < 0
-          ? `expired ${expDate.toISOString().split('T')[0]}`
-          : `expires ${expDate.toISOString().split('T')[0]} (${daysLeft} days)`;
-
-        certLines.push(formatter.statusLine(status, `${name} — ${domain}`, detail));
+    const cacheKey = `${tenant.name}:${ns}:cert_status`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await renderCerts(say, formatter, ns, cached, true);
+        return;
       }
     }
 
-    if (certLines.length === 0) {
-      await say({ blocks: formatter.errorBlock(`No certificate data found for LBs in namespace \`${ns}\`.`) });
-      return;
-    }
+    const startTime = Date.now();
+    const lbData = await tenant.client.get(`/api/config/namespaces/${ns}/http_loadbalancers`);
+    const lbs = lbData.items || [];
+    cache.set(cacheKey, lbs, 300);
 
-    const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `🔒 Certificate Status — ${ns}` } },
-      { type: 'section', text: { type: 'mrkdwn', text: certLines.join('\n') } },
-      formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
-    ];
-
-    await say({ blocks });
+    await renderCerts(say, formatter, ns, lbs, false, Date.now() - startTime);
   },
 };
+
+async function renderCerts(say, formatter, ns, lbs, cached, durationMs) {
+  const certLines = [];
+  for (const lb of lbs) {
+    const name = lb.name || lb.metadata?.name;
+    const timestamps = lb.spec?.downstream_tls_certificate_expiration_timestamps || {};
+    for (const [domain, expiry] of Object.entries(timestamps)) {
+      const expDate = new Date(expiry);
+      const now = new Date();
+      const daysLeft = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+
+      let status;
+      if (daysLeft < 0) status = 'expired';
+      else if (daysLeft < 30) status = 'expiring';
+      else status = 'valid';
+
+      const detail = daysLeft < 0
+        ? `expired ${expDate.toISOString().split('T')[0]}`
+        : `expires ${expDate.toISOString().split('T')[0]} (${daysLeft} days)`;
+
+      certLines.push(formatter.statusLine(status, `${name} — ${domain}`, detail));
+    }
+  }
+
+  if (certLines.length === 0) {
+    await say({ blocks: formatter.errorBlock(`No certificate data found for LBs in namespace \`${ns}\`.`) });
+    return;
+  }
+
+  const blocks = [
+    { type: 'header', text: { type: 'plain_text', text: `🔒 Certificate Status — ${ns}` } },
+    { type: 'section', text: { type: 'mrkdwn', text: certLines.join('\n') } },
+    formatter.footer({ durationMs, cached, namespace: ns }),
+  ];
+
+  await say({ blocks });
+}

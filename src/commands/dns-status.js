@@ -24,8 +24,16 @@ module.exports = {
     }
 
     const ns = args.namespace;
-    const startTime = Date.now();
+    const cacheKey = `${tenant.name}:${ns}:dns_status`;
+    if (!args.fresh) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await say({ blocks: cached.blocks });
+        return;
+      }
+    }
 
+    const startTime = Date.now();
     const [zoneData, gslbData] = await Promise.all([
       tenant.client.get(`/api/config/dns/namespaces/${ns}/dns_zones`).catch(() => ({ items: [] })),
       tenant.client.get(`/api/config/dns/namespaces/${ns}/dns_load_balancers`).catch(() => ({ items: [] })),
@@ -57,6 +65,7 @@ module.exports = {
     }
 
     blocks.push(formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }));
+    cache.set(cacheKey, { blocks }, 300);
     await say({ blocks });
   },
 };

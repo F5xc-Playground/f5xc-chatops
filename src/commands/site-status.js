@@ -46,7 +46,13 @@ async function renderSites(say, formatter, sites, cached, durationMs) {
     const name = site.metadata?.name || site.name || 'unknown';
     const siteType = site.spec?.site_type || 'unknown';
     const version = site.status?.software_version || 'N/A';
-    return formatter.statusLine('healthy', name, `${siteType} · v${version}`);
+    const connState = site.status?.connected_state?.toLowerCase() || '';
+    const opState = site.status?.operational_state?.toLowerCase() || '';
+    let status = 'unknown';
+    if (connState === 'connected' || opState === 'installed') status = 'healthy';
+    else if (connState === 'degraded' || opState === 'upgrading') status = 'warning';
+    else if (connState === 'disconnected' || opState === 'failed') status = 'down';
+    return formatter.statusLine(status, name, `${siteType} · v${version}`);
   });
 
   const blocks = [

@@ -167,7 +167,7 @@ module.exports = {
 
   buildMermaid,
 
-  handler: async ({ say, tenant, cache, args, formatter, diagramRenderer }) => {
+  handler: async ({ say, client, tenant, cache, args, formatter, diagramRenderer }) => {
     if (!args.namespace) {
       const nsRoleMap = tenant.cachedWhoami?.namespace_access?.namespace_role_map || {};
       await say({ blocks: formatter.namespacePicker('diagram.lb', Object.keys(nsRoleMap)) });
@@ -212,10 +212,16 @@ module.exports = {
     try {
       outputPath = await diagramRenderer.renderToFile(mermaid);
       const fs = require('fs');
-      await say({
-        text: `LB diagram: ${name}`,
-        files: [{ file: fs.createReadStream(outputPath), filename: `${name}-diagram.png` }],
-      });
+      if (client) {
+        await client.files.uploadV2({
+          file: fs.createReadStream(outputPath),
+          filename: `${name}-diagram.png`,
+          channel_id: args._channelId,
+          initial_comment: `LB diagram: ${name} (${ns})`,
+        });
+      } else {
+        await say(`Diagram rendered but file upload requires Slack client. Use a slash command or @mention.`);
+      }
     } catch (err) {
       await say({ blocks: formatter.errorBlock(`Diagram render failed: ${err.message}. Try \`/xc-lb ${ns} ${name}\` for a text summary.`) });
     } finally {

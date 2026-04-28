@@ -29,12 +29,21 @@ function buildConfig(env) {
     cacheWarmTTL: parseInt(env.CACHE_WARM_TTL, 10) || 300,
     cacheStaticTTL: parseInt(env.CACHE_STATIC_TTL, 10) || 3600,
     nlpThreshold: parseFloat(env.NLP_THRESHOLD) || 0.65,
+    port: parseInt(env.PORT, 10) || 3000,
   };
 }
 
 function log(level, message, data = {}) {
   const entry = { timestamp: new Date().toISOString(), level, message, ...data };
   console.log(JSON.stringify(entry));
+}
+
+function formatApiError(err, context) {
+  if (err.status === 401) return 'Authentication failed. Check that the API token is valid and not expired.';
+  if (err.status === 403) return `Permission denied. The bot's API token lacks access for this operation.`;
+  if (err.status === 404) return `Resource not found. Check the namespace and resource name are correct.`;
+  if (err.status >= 500) return `XC API returned a server error (${err.status}). Try again in a moment.`;
+  return `Command failed: ${err.message}`;
 }
 
 async function start() {
@@ -101,8 +110,8 @@ async function start() {
   log('info', 'NLP trained', { intents: allIntents.length });
 
   // Build handler context
-  function makeHandlerContext(say) {
-    return { tenant, cache, say, aiAssistant, diagramRenderer, formatter, config, commandRegistry: { commands } };
+  function makeHandlerContext(say, client) {
+    return { tenant, cache, say, client, aiAssistant, diagramRenderer, formatter, config, commandRegistry: { commands } };
   }
 
   // Bolt.js app
@@ -114,37 +123,40 @@ async function start() {
 
   // Register slash commands
   for (const [cmd, mod] of Object.entries(slashMap)) {
-    app.command(cmd, async ({ command, ack, say }) => {
+    app.command(cmd, async ({ command, ack, say, client }) => {
       await ack();
       const rawArgs = command.text || '';
-      const parts = rawArgs.split(/\s+/).filter(Boolean);
+      const fresh = /--fresh\b/.test(rawArgs);
+      const cleanedArgs = rawArgs.replace(/--fresh\b/g, '').trim();
+      const parts = cleanedArgs.split(/\s+/).filter(Boolean);
       const args = {
         namespace: parts[0] || null,
         resourceName: parts[1] || null,
-        raw: rawArgs,
-        fresh: false,
+        raw: cleanedArgs,
+        fresh,
+        _channelId: command.channel_id,
       };
       try {
-        await mod.handler({ ...makeHandlerContext(say), args });
+        await mod.handler({ ...makeHandlerContext(say, client), args });
       } catch (err) {
         log('error', `Command ${cmd} failed`, { error: err.message });
-        await say({ blocks: formatter.errorBlock(`Command failed: ${err.message}`) });
+        await say({ blocks: formatter.errorBlock(formatApiError(err, cmd)) });
       }
     });
   }
 
   // Handle @mentions and DMs via NLP
-  app.event('app_mention', async ({ event, say }) => {
+  app.event('app_mention', async ({ event, say, client }) => {
     const text = event.text.replace(/<@[A-Z0-9]+>/g, '').trim();
-    await handleNaturalLanguage(text, say);
+    await handleNaturalLanguage(text, say, client, event.channel);
   });
 
-  app.message(async ({ message, say }) => {
+  app.message(async ({ message, say, client }) => {
     if (message.channel_type !== 'im') return;
-    await handleNaturalLanguage(message.text, say);
+    await handleNaturalLanguage(message.text, say, client, message.channel);
   });
 
-  async function handleNaturalLanguage(text, say) {
+  async function handleNaturalLanguage(text, say, client, channelId) {
     const result = await nlp.process(text);
 
     if (!result.intent) {
@@ -184,27 +196,88 @@ async function start() {
       resourceType: result.entities.resourceType || null,
       fresh: result.fresh,
       raw: text,
+      _channelId: channelId,
     };
 
     try {
-      await mod.handler({ ...makeHandlerContext(say), args });
+      await mod.handler({ ...makeHandlerContext(say, client), args });
     } catch (err) {
       log('error', `NL handler failed`, { intent: result.intent, error: err.message });
-      await say({ blocks: formatter.errorBlock(`Something went wrong: ${err.message}`) });
+      await say({ blocks: formatter.errorBlock(formatApiError(err, result.intent)) });
     }
   }
 
   // Namespace picker button handler
-  app.action(/^ns_pick_/, async ({ action, ack, say }) => {
+  app.action(/^ns_pick_/, async ({ action, ack, say, client }) => {
     await ack();
     const { intent, namespace } = JSON.parse(action.value);
     const mod = intentMap[intent];
     if (!mod) return;
     const args = { namespace, fresh: false, raw: '' };
     try {
-      await mod.handler({ ...makeHandlerContext(say), args });
+      await mod.handler({ ...makeHandlerContext(say, client), args });
     } catch (err) {
-      await say({ blocks: formatter.errorBlock(`Command failed: ${err.message}`) });
+      await say({ blocks: formatter.errorBlock(formatApiError(err, intent)) });
+    }
+  });
+
+  // AI follow-up button handlers
+  app.action(/^(?:followup_|ai_followup_|suggest_followup_)\d+$/, async ({ action, ack, say }) => {
+    await ack();
+    const { query, namespace } = JSON.parse(action.value);
+    try {
+      await say(`🤖 Following up...`);
+      const result = await aiAssistant.query(namespace, query);
+      const blocks = [];
+      const summary = result.generic_response?.summary
+        || result.explain_log?.summary
+        || result.list_response?.items?.map((i) => `• ${i.title || i}`).join('\n')
+        || 'No additional details.';
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: summary } });
+      if (result.follow_up_queries?.length) {
+        blocks.push({
+          type: 'actions',
+          elements: result.follow_up_queries.slice(0, 5).map((q, i) => ({
+            type: 'button',
+            text: { type: 'plain_text', text: q.length > 75 ? q.slice(0, 72) + '...' : q },
+            action_id: `ai_followup_${i}`,
+            value: JSON.stringify({ query: q, namespace }),
+          })),
+        });
+      }
+      await say({ blocks });
+    } catch (err) {
+      log('error', 'AI follow-up failed', { error: err.message });
+      await say({ blocks: formatter.errorBlock(`Follow-up failed: ${err.message}`) });
+    }
+  });
+
+  // NLP suggestion button handler
+  app.action(/^suggest_/, async ({ action, ack, say, client }) => {
+    await ack();
+    const intent = action.value;
+    const mod = intentMap[intent];
+    if (!mod) {
+      await say({ blocks: formatter.errorBlock(`No handler found for "${intent}".`) });
+      return;
+    }
+    const args = { namespace: null, fresh: false, raw: '' };
+    try {
+      await mod.handler({ ...makeHandlerContext(say, client), args });
+    } catch (err) {
+      await say({ blocks: formatter.errorBlock(formatApiError(err, intent)) });
+    }
+  });
+
+  // AI feedback via reactions — thumbs up/down on AI responses
+  app.event('reaction_added', async ({ event }) => {
+    const emoji = event.reaction;
+    if (emoji !== '+1' && emoji !== '-1' && emoji !== 'thumbsup' && emoji !== 'thumbsdown') return;
+    const positive = emoji === '+1' || emoji === 'thumbsup';
+    try {
+      await aiAssistant.feedback('system', '', '', positive, positive ? '' : 'OTHER');
+    } catch (err) {
+      log('warn', 'AI feedback submission failed', { error: err.message });
     }
   });
 
@@ -225,7 +298,7 @@ async function start() {
       res.end();
     }
   });
-  healthServer.listen(3000);
+  healthServer.listen(config.port);
 
   await app.start();
   log('info', 'Bot started', {
@@ -242,4 +315,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { validateEnv, buildConfig, start };
+module.exports = { validateEnv, buildConfig, formatApiError, start };
