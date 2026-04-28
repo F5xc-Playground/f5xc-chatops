@@ -4,119 +4,96 @@ Operational visibility into F5 Distributed Cloud — from Slack.
 
 Get answers about your tenant without opening the console. Check what's deployed, see if certs are expiring, visualize load balancer chains, investigate security events, monitor quota usage, and ask the XC AI Assistant follow-up questions — all without leaving the conversation.
 
-## What It Does
+## Commands
+
+Every slash command also works as a natural language query — @mention the bot or DM it.
 
 ### See what's running
 
-Check namespace contents, list resources by type, and get a quick count of what's deployed where.
+`/xc-ns <namespace>` — Namespace resource summary
+> *"what's in the prod namespace"* · *"give me a summary of namespace staging"*
 
-```
-/xc-ns prod
-/xc-list http_loadbalancer prod
-```
+`/xc-list <namespace> <type>` — List resources by type
+> *"list all load balancers in prod"* · *"show WAF policies in staging"*
 
-Or ask naturally: *"what's in the prod namespace"*
+`/xc-whoami` — Bot identity and accessible namespaces
+> *"what namespaces can you see"* · *"what roles do you have"*
 
 ### Inspect load balancers
 
-Get the full picture for any LB: domains, advertise mode, WAF policy, bot defense, service policies, default pools, and route count.
+`/xc-lb <namespace> <lb>` — Load balancer detail (domains, WAF, bot defense, routes, pools)
+> *"tell me about the load balancer"* · *"what is configured on the LB"*
 
-```
-/xc-lb prod my-app-lb
-```
+`/xc-diagram <namespace> <lb>` — Visual LB chain diagram (PNG uploaded to channel)
+> *"diagram the load balancer chain"* · *"visualize the load balancer"*
 
-### Visualize LB chains
-
-Generate a diagram showing the full path from user to origin: LB → security controls → routes → origin pools → servers. Uploaded as a PNG image directly in the channel.
-
-```
-/xc-diagram prod my-app-lb
-```
-
-The diagram includes WAF policies, service policies, bot defense, API protection, per-route overrides, redirect routes, and origin server details with site locations.
+`/xc-origins <namespace> <pool>` — Origin pool servers
+> *"show origin pool health"* · *"which origins are down"*
 
 ### Monitor certificates
 
-Scan all LBs in a namespace for certificate expiration. Color-coded: green for valid, yellow for expiring within 30 days, red for expired.
-
-```
-/xc-certs prod
-```
+`/xc-certs <namespace>` — Certificate expiration scan (color-coded: green/yellow/red)
+> *"any certs expiring soon"* · *"are any certificates expired"*
 
 ### Check quota utilization
 
-See how close you are to resource limits. Color-coded warnings at 80% and 100% utilization, with a forecast view filtering to just the resources approaching their limits.
+`/xc-quota <namespace>` — Quota utilization (color-coded at 80% and 100%)
+> *"show me quota usage"* · *"how much capacity do we have left"*
 
-```
-/xc-quota prod
-/xc-quota-forecast prod
-```
+`/xc-quota-forecast <namespace>` — Resources approaching limits
+> *"which quotas are almost full"* · *"will we hit any limits soon"*
 
 ### Review security posture
 
-Check WAF mode (blocking vs monitoring), list service policies on an LB, see bot defense status, and scan all LBs for API discovery and protection configuration.
+`/xc-waf <namespace> <lb>` — WAF policy and mode
+> *"is the WAF in blocking mode"* · *"check the web application firewall"*
 
-```
-/xc-waf prod my-app-lb
-/xc-policies prod my-app-lb
-/xc-bot prod my-app-lb
-/xc-api-sec prod
-```
+`/xc-policies <namespace> <lb>` — Service policies on an LB
+> *"what service policies are on the LB"* · *"what policies are applied"*
+
+`/xc-bot <namespace> <lb>` — Bot defense status
+> *"is bot defense enabled"* · *"check bot defense"*
+
+`/xc-api-sec <namespace>` — API discovery and protection per LB
+> *"api security status"* · *"are there any shadow APIs"*
 
 ### Investigate security events
 
-Pass a support ID to the XC AI Assistant for an explanation of what happened, with recommended actions and follow-up buttons for deeper investigation.
-
-```
-/xc-event abc-123-def
-```
+`/xc-event <support-id>` — AI-powered security event explanation with follow-up buttons
+> *"explain security event abc-123"* · *"investigate security event"*
 
 ### Ask the AI Assistant
 
-Proxy any question to the XC AI Assistant and get the response formatted in Slack. Follow-up suggestions appear as buttons so you can drill deeper without retyping.
+`/xc-ask <question>` — Free-form AI Assistant query
+> *"how do I configure rate limiting for my API"* · *"ask the assistant about DDoS protection"*
 
-```
-/xc-ask how do I configure rate limiting for my API
-/xc-suggest prod my-app-lb
-```
+`/xc-suggest <namespace> <lb>` — AI-powered LB optimization suggestions
+> *"suggest improvements for the load balancer"* · *"how can I optimize my LB"*
 
 ### Monitor infrastructure
 
-List all sites with connectivity status, get details on a specific site, check DNS zone configuration, and review alert policies.
+`/xc-sites` — All sites with connectivity status
+> *"show me all sites"* · *"are all sites online"*
 
-```
-/xc-sites
-/xc-site dallas-ce
-/xc-dns prod
-/xc-alerts prod
-```
+`/xc-site <name>` — Single site detail
+> *"details on site dallas-ce"* · *"describe site"*
 
-### See the bot's access
+`/xc-dns <namespace>` — DNS zones and GSLB
+> *"show DNS zones"* · *"what DNS zones are configured"*
 
-Check which namespaces the bot can see and what roles it has.
+`/xc-alerts <namespace>` — Alert policies and receivers
+> *"any active alerts"* · *"check alerts"*
 
-```
-/xc-whoami
-```
+### Help
 
-## Using Natural Language
+`/xc-help` — List all commands or get detail on one
+> *"what can you do"* · *"how do I use this"*
 
-Every command also works as a natural language query — @mention the bot or DM it:
+## How It Works
 
-- *"what quotas are running high in prod"*
-- *"diagram the LB chain for app-payments in namespace prod"*
-- *"any certs expiring soon in staging"*
-- *"explain security event abc-123"*
-- *"is bot defense enabled on my-app-lb in prod"*
-- *"show me all sites"*
+If the bot isn't sure what you mean, it suggests the closest matches as buttons. If a required detail is missing (like namespace), the bot replies with a picker showing all accessible namespaces — one tap completes the query.
 
-If the bot isn't sure what you mean, it suggests the closest matches as buttons.
-
-If a required detail is missing (like namespace), the bot replies with a picker showing all accessible namespaces — one tap completes the query.
-
-### Cache and freshness
-
-Results are cached for 5 minutes to avoid hammering the API. Add `--fresh` to any slash command (or say "force refresh", "no cache", "live data") to bypass the cache and get live results.
+Results are cached for 5 minutes to avoid hammering the API. Add `--fresh` to any slash command (or say "force refresh", "no cache", "live data") to bypass the cache.
 
 ```
 /xc-quota prod --fresh
@@ -124,21 +101,17 @@ Results are cached for 5 minutes to avoid hammering the API. Add `--fresh` to an
 
 ## How Output Looks
 
-**Tables** — Monospace grids with auto-sized columns and header separators. Used for quota checks, resource lists, DNS zones.
+**Tables** — Monospace grids with auto-sized columns. Used for quota checks, resource lists, DNS zones.
 
-**Status indicators** — Color-coded emoji for at-a-glance health:
-- 🟢 Healthy / valid / connected
-- 🟡 Degraded / expiring / warning
-- 🔴 Down / expired / critical
-- ⚪ Unknown
+**Status indicators** — Color-coded emoji: 🟢 healthy · 🟡 warning · 🔴 critical · ⚪ unknown
 
-**Detail views** — Two-column key-value layouts for single-resource inspection (LB details, site details, WAF status).
+**Detail views** — Key-value layouts for single-resource inspection.
 
 **Diagrams** — PNG images rendered and uploaded inline in the channel.
 
-**AI responses** — Adaptive formatting based on the XC AI Assistant response type, with follow-up query buttons. Thumbs-up/thumbs-down reactions on AI responses are sent back as feedback.
+**AI responses** — Formatted responses with follow-up query buttons. Thumbs-up/thumbs-down reactions are sent back as feedback.
 
-Every response includes a footer: fetch time, whether the result was cached or live, and the namespace.
+Every response includes a footer with fetch time, cache status, and namespace.
 
 ## Setup
 
@@ -180,32 +153,6 @@ npm start
 | `CACHE_STATIC_TTL` | No | Cache duration for rarely-changing data (default: `3600`) |
 | `NLP_THRESHOLD` | No | Confidence threshold for intent matching (default: `0.65`) |
 | `PORT` | No | Health endpoint port (default: `3000`) |
-
-## All Commands
-
-| Command | What it does |
-|---------|-------------|
-| `/xc-help` | List all commands or get detail on one |
-| `/xc-whoami` | Bot identity and accessible namespaces |
-| `/xc-ns <ns>` | Namespace resource summary |
-| `/xc-list <type> <ns>` | List resources by type |
-| `/xc-lb <ns> <lb>` | Load balancer detail |
-| `/xc-diagram <ns> <lb>` | Visual LB chain diagram (PNG) |
-| `/xc-certs <ns>` | Certificate expiration scan |
-| `/xc-origins <ns> <pool>` | Origin pool servers |
-| `/xc-waf <ns> <lb>` | WAF policy and mode |
-| `/xc-policies <ns> <lb>` | Service policies on an LB |
-| `/xc-bot <ns> <lb>` | Bot defense status |
-| `/xc-api-sec <ns>` | API discovery/protection per LB |
-| `/xc-event <id>` | AI-powered security event explanation |
-| `/xc-quota <ns>` | Quota utilization |
-| `/xc-quota-forecast <ns>` | Resources approaching limits |
-| `/xc-ask <question>` | Free-form AI Assistant query |
-| `/xc-suggest <ns> <lb>` | AI-powered LB optimization suggestions |
-| `/xc-sites` | All sites with health status |
-| `/xc-site <name>` | Single site detail |
-| `/xc-dns <ns>` | DNS zones and GSLB |
-| `/xc-alerts <ns>` | Alert policies and receivers |
 
 ## Adding Commands
 

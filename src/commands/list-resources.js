@@ -43,7 +43,7 @@ module.exports = {
       return;
     }
 
-    const resourceType = args.resourceType || args.raw?.split(/\s+/)[0] || 'http_loadbalancer';
+    const resourceType = args.resourceType || args.resourceName || 'http_loadbalancer';
     const apiPath = RESOURCE_PATHS[resourceType];
 
     if (!apiPath) {
