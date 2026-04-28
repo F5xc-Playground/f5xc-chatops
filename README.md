@@ -115,44 +115,14 @@ Every response includes a footer with fetch time, cache status, and namespace.
 
 ## Setup
 
-1. **Create a Slack App** at https://api.slack.com/apps with Socket Mode enabled
-2. Copy `.env.example` to `.env` and fill in your tokens
-3. Run:
+See [SETUP.md](SETUP.md) for the full walkthrough — creating the Slack app, generating an F5 XC API token, registering commands, and running the bot.
+
+Quick start if you've done this before:
 
 ```bash
+cp .env.example .env   # fill in the four required tokens
 docker compose up -d
 ```
-
-Or without Docker:
-
-```bash
-npm install
-npm start
-```
-
-### Slack App Configuration
-
-**Bot Token Scopes:** `chat:write`, `commands`, `files:write`, `app_mentions:read`, `im:history`, `reactions:read`
-
-**Socket Mode:** Enabled (generates the `SLACK_APP_TOKEN` — no public URL needed)
-
-**Slash Commands:** Register each `/xc-*` command in App Settings > Slash Commands
-
-**Event Subscriptions:** Subscribe to `app_mention`, `message.im`, and `reaction_added`
-
-### Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `F5XC_API_URL` | Yes | Your XC tenant URL (e.g. `https://acme.console.ves.volterra.io`) |
-| `F5XC_API_TOKEN` | Yes | XC API token (read-only access recommended) |
-| `SLACK_BOT_TOKEN` | Yes | Slack bot OAuth token (`xoxb-...`) |
-| `SLACK_APP_TOKEN` | Yes | Slack app-level token for Socket Mode (`xapp-...`) |
-| `LOG_LEVEL` | No | `debug`, `info`, `warn`, or `error` (default: `info`) |
-| `CACHE_WARM_TTL` | No | Cache duration in seconds (default: `300`) |
-| `CACHE_STATIC_TTL` | No | Cache duration for rarely-changing data (default: `3600`) |
-| `NLP_THRESHOLD` | No | Confidence threshold for intent matching (default: `0.65`) |
-| `PORT` | No | Health endpoint port (default: `3000`) |
 
 ## Adding Commands
 
