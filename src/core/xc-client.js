@@ -17,6 +17,10 @@ class XCClient {
     return this._request('POST', path, body, timeout);
   }
 
+  async put(path, body, { timeout = DEFAULT_TIMEOUT_MS } = {}) {
+    return this._request('PUT', path, body, timeout);
+  }
+
   async _request(method, path, body, timeout) {
     const url = `${this._apiUrl}${path}`;
     const headers = {

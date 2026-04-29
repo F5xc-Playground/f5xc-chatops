@@ -4,13 +4,24 @@ class AIAssistant {
   }
 
   async query(namespace, queryText) {
-    return this._client.post(`/api/gen-ai/namespaces/${namespace}/query`, {
-      current_query: queryText,
-      namespace,
-    });
+    const path = `/api/gen-ai/namespaces/${namespace}/query`;
+    const body = { current_query: queryText, namespace };
+
+    try {
+      return await this._client.put(path, body);
+    } catch (err) {
+      if (err.status === 404 || err.status === 405) {
+        return await this._client.post(path, body);
+      }
+      if (err.status === 403) {
+        throw Object.assign(new Error('AI Assistant access denied. The API token may lack permissions for the gen-ai API.'), { status: 403 });
+      }
+      throw err;
+    }
   }
 
   async feedback(namespace, queryId, queryText, positive, remark) {
+    const path = `/api/gen-ai/namespaces/${namespace}/query_feedback`;
     const body = {
       namespace,
       query_id: queryId,
@@ -25,10 +36,14 @@ class AIAssistant {
       };
     }
 
-    return this._client.post(
-      `/api/gen-ai/namespaces/${namespace}/query_feedback`,
-      body
-    );
+    try {
+      return await this._client.put(path, body);
+    } catch (err) {
+      if (err.status === 404 || err.status === 405) {
+        return await this._client.post(path, body);
+      }
+      throw err;
+    }
   }
 }
 

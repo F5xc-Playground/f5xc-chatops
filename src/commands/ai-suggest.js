@@ -38,7 +38,16 @@ module.exports = {
     await say(`🤖 Asking for suggestions on \`${name}\`...`);
 
     const query = `Suggest improvements and optimizations for HTTP load balancer "${name}" in namespace "${ns}"`;
-    const result = await aiAssistant.query(ns, query);
+    let result;
+    try {
+      result = await aiAssistant.query(ns, query);
+    } catch (err) {
+      if (err.status === 404) {
+        await say({ blocks: formatter.errorBlock('AI Assistant is not available. The feature may not be enabled on this tenant, or the API path may have changed.') });
+        return;
+      }
+      throw err;
+    }
 
     const blocks = [];
     blocks.push({ type: 'header', text: { type: 'plain_text', text: `💡 Suggestions — ${name}` } });

@@ -27,7 +27,16 @@ module.exports = {
 
     await say(`🔍 Looking up security event \`${supportId.trim()}\`...`);
 
-    const result = await aiAssistant.query(ns, `Explain security event ${supportId.trim()}`);
+    let result;
+    try {
+      result = await aiAssistant.query(ns, `Explain security event ${supportId.trim()}`);
+    } catch (err) {
+      if (err.status === 404) {
+        await say({ blocks: formatter.errorBlock('AI Assistant is not available. The feature may not be enabled on this tenant, or the API path may have changed.') });
+        return;
+      }
+      throw err;
+    }
 
     const blocks = [];
     blocks.push({ type: 'header', text: { type: 'plain_text', text: `🔒 Security Event: ${supportId.trim()}` } });
