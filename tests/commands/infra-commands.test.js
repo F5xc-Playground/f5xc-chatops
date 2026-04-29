@@ -92,16 +92,22 @@ describe('alert-status handler', () => {
 });
 
 describe('site-status handler', () => {
-  test('lists sites with status', async () => {
+  test('lists CE sites by default', async () => {
     const messages = [];
     const tenant = {
       name: 'test',
       client: {
-        get: jest.fn().mockResolvedValue({
-          items: [
-            { metadata: { name: 'site-1' }, spec: { site_type: 'CUSTOMER_EDGE' }, status: { software_version: '7.2.1' } },
-            { metadata: { name: 'site-2' }, spec: { site_type: 'RE' }, status: { software_version: '7.2.1' } },
-          ],
+        get: jest.fn().mockImplementation((path) => {
+          if (path.endsWith('/sites')) {
+            return Promise.resolve({
+              items: [
+                { metadata: { name: 'site-1' }, labels: { 'ves.io/siteType': 'ves-io-ce' }, status: { connected_state: 'ONLINE' } },
+                { metadata: { name: 'site-2' }, labels: { 'ves.io/siteType': 'ves-io-re' }, status: { connected_state: 'ONLINE' } },
+              ],
+            });
+          }
+          const name = path.split('/').pop();
+          return Promise.resolve({ metadata: { name }, spec: { connected_state: 'ONLINE' }, status: { connected_state: 'ONLINE' } });
         }),
       },
     };
@@ -109,11 +115,44 @@ describe('site-status handler', () => {
       say: (msg) => messages.push(msg),
       tenant,
       cache: new Cache(),
-      args: {},
+      args: { raw: '' },
       formatter,
     });
     const text = JSON.stringify(messages[0]);
     expect(text).toContain('site-1');
-    expect(text).toContain('site-2');
+    expect(text).not.toContain('site-2');
+    expect(text).toContain('Customer Edge');
+  });
+
+  test('lists all sites with "all" filter', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockImplementation((path) => {
+          if (path.endsWith('/sites')) {
+            return Promise.resolve({
+              items: [
+                { metadata: { name: 'ce-1' }, labels: { 'ves.io/siteType': 'ves-io-ce' } },
+                { metadata: { name: 're-1' }, labels: { 'ves.io/siteType': 'ves-io-re' } },
+              ],
+            });
+          }
+          const name = path.split('/').pop();
+          return Promise.resolve({ metadata: { name }, spec: {} });
+        }),
+      },
+    };
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { raw: 'all' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('ce-1');
+    expect(text).toContain('re-1');
+    expect(text).toContain('All Sites');
   });
 });
