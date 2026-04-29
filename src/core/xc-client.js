@@ -50,7 +50,7 @@ class XCClient {
         }
 
         const errorBody = await response.text().catch(() => '');
-        const err = new Error(`XC API ${method} ${path} failed: ${response.status}`);
+        const err = new Error(`XC API ${method} ${path} failed: ${response.status} — ${errorBody}`);
         err.status = response.status;
         err.body = errorBody;
         throw err;
