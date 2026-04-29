@@ -229,6 +229,20 @@ async function start() {
     }
   });
 
+  // Resource picker button handler
+  app.action(/^res_pick_/, async ({ action, ack, say, client }) => {
+    await ack();
+    const { intent, namespace, resourceName } = JSON.parse(action.value);
+    const mod = intentMap[intent];
+    if (!mod) return;
+    const args = { namespace, resourceName, fresh: false, raw: '', _channelId: action.channel?.id };
+    try {
+      await mod.handler({ ...makeHandlerContext(say, client), args });
+    } catch (err) {
+      await say({ blocks: formatter.errorBlock(formatApiError(err, intent)) });
+    }
+  });
+
   // AI follow-up button handlers
   app.action(/^(?:followup_|ai_followup_|suggest_followup_)\d+$/, async ({ action, ack, say }) => {
     await ack();

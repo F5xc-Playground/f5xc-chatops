@@ -99,4 +99,25 @@ function namespacePicker(intentName, namespaces) {
   ];
 }
 
-module.exports = { table, statusLine, detailView, errorBlock, footer, namespacePicker };
+function resourcePicker(intentName, namespace, resourceNames, label) {
+  const blocks = [
+    {
+      type: 'section',
+      text: { type: 'mrkdwn', text: label || 'Which one?' },
+    },
+  ];
+  for (let i = 0; i < resourceNames.length; i += 20) {
+    blocks.push({
+      type: 'actions',
+      elements: resourceNames.slice(i, i + 20).map((name) => ({
+        type: 'button',
+        text: { type: 'plain_text', text: name.length > 75 ? name.slice(0, 72) + '...' : name },
+        action_id: `res_pick_${name}_${i}`,
+        value: JSON.stringify({ intent: intentName, namespace, resourceName: name }),
+      })),
+    });
+  }
+  return blocks;
+}
+
+module.exports = { table, statusLine, detailView, errorBlock, footer, namespacePicker, resourcePicker };

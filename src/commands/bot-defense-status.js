@@ -23,7 +23,13 @@ module.exports = {
       return;
     }
     if (!args.resourceName) {
-      await say({ blocks: formatter.errorBlock('Please specify an LB name. Example: `/xc-bot prod my-lb`') });
+      const data = await tenant.client.get(`/api/config/namespaces/${args.namespace}/http_loadbalancers`);
+      const names = (data.items || []).map((lb) => lb.name || lb.metadata?.name).filter(Boolean);
+      if (names.length === 0) {
+        await say({ blocks: formatter.errorBlock(`No load balancers found in namespace \`${args.namespace}\`.`) });
+      } else {
+        await say({ blocks: formatter.resourcePicker('bot.defense.status', args.namespace, names, `Check bot defense for which LB in *${args.namespace}*?`) });
+      }
       return;
     }
 

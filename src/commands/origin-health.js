@@ -24,7 +24,13 @@ module.exports = {
       return;
     }
     if (!args.resourceName) {
-      await say({ blocks: formatter.errorBlock('Please specify an origin pool name. Example: `/xc-origins prod my-pool`') });
+      const data = await tenant.client.get(`/api/config/namespaces/${args.namespace}/origin_pools`);
+      const names = (data.items || []).map((p) => p.name || p.metadata?.name).filter(Boolean);
+      if (names.length === 0) {
+        await say({ blocks: formatter.errorBlock(`No origin pools found in namespace \`${args.namespace}\`.`) });
+      } else {
+        await say({ blocks: formatter.resourcePicker('origin.health', args.namespace, names, `Which origin pool in *${args.namespace}*?`) });
+      }
       return;
     }
 
