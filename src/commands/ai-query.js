@@ -22,7 +22,7 @@ module.exports = {
       return;
     }
 
-    const ns = args.namespace || 'system';
+    const ns = 'system';
     await say(`🤖 Asking the AI Assistant...`);
 
     let result;
