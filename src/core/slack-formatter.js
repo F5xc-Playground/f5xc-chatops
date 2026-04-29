@@ -69,19 +69,15 @@ function footer({ durationMs, cached, namespace }) {
 }
 
 function namespacePicker(intentName, namespaces) {
-  const real = namespaces.filter((ns) => ns !== '*').sort();
   return [
     {
       type: 'section',
       text: { type: 'mrkdwn', text: 'Which namespace?' },
       accessory: {
-        type: 'static_select',
-        placeholder: { type: 'plain_text', text: 'Select a namespace...' },
-        action_id: 'ns_select',
-        options: real.slice(0, 100).map((ns) => ({
-          text: { type: 'plain_text', text: ns.length > 75 ? ns.slice(0, 72) + '...' : ns },
-          value: JSON.stringify({ intent: intentName, namespace: ns }),
-        })),
+        type: 'external_select',
+        placeholder: { type: 'plain_text', text: 'Type to search namespaces...' },
+        action_id: `ns_select_${intentName}`,
+        min_query_length: 0,
       },
     },
   ];

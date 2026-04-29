@@ -76,22 +76,13 @@ describe('slack-formatter', () => {
   });
 
   describe('namespacePicker', () => {
-    test('renders dropdown with sorted namespaces', () => {
+    test('renders external_select with intent in action_id', () => {
       const blocks = fmt.namespacePicker('quota.check', ['system', 'prod', 'staging']);
       const section = blocks.find((b) => b.type === 'section');
       const select = section.accessory;
-      expect(select.type).toBe('static_select');
-      expect(select.action_id).toBe('ns_select');
-      expect(select.options).toHaveLength(3);
-      expect(select.options[0].text.text).toBe('prod');
-      expect(select.options[1].text.text).toBe('staging');
-      expect(select.options[2].text.text).toBe('system');
-    });
-
-    test('filters wildcard namespace', () => {
-      const blocks = fmt.namespacePicker('quota.check', ['prod', '*', 'staging']);
-      const select = blocks[0].accessory;
-      expect(select.options).toHaveLength(2);
+      expect(select.type).toBe('external_select');
+      expect(select.action_id).toBe('ns_select_quota.check');
+      expect(select.min_query_length).toBe(0);
     });
   });
 });

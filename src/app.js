@@ -215,10 +215,24 @@ async function start() {
     }
   }
 
-  // Namespace dropdown handler
-  app.action('ns_select', async ({ action, ack, say, client }) => {
+  // Namespace typeahead options loader
+  app.options(/^ns_select_/, async ({ options, ack }) => {
+    const query = (options.value || '').toLowerCase();
+    const all = (tenant.namespaces || []).filter((ns) => ns !== '*').sort();
+    const filtered = query ? all.filter((ns) => ns.toLowerCase().includes(query)) : all;
+    await ack({
+      options: filtered.slice(0, 100).map((ns) => ({
+        text: { type: 'plain_text', text: ns },
+        value: ns,
+      })),
+    });
+  });
+
+  // Namespace selection handler
+  app.action(/^ns_select_/, async ({ action, ack, say, client }) => {
     await ack();
-    const { intent, namespace } = JSON.parse(action.selected_option.value);
+    const intent = action.action_id.replace('ns_select_', '');
+    const namespace = action.selected_option.value;
     const mod = intentMap[intent];
     if (!mod) return;
     const args = { namespace, fresh: false, raw: '' };
