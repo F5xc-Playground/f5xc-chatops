@@ -59,11 +59,9 @@ describe('whoami handler — with cachedWhoami', () => {
     const tenant = makeTenant();
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];
-    const fieldTexts = blocks
-      .filter((b) => b.type === 'section' && b.fields)
-      .flatMap((b) => b.fields.map((f) => f.text));
-    expect(fieldTexts.some((t) => t.includes('acme'))).toBe(true);
-    expect(fieldTexts.some((t) => t.includes('bot@acme.com'))).toBe(true);
+    const text = JSON.stringify(blocks);
+    expect(text).toContain('acme');
+    expect(text).toContain('bot@acme.com');
   });
 
   test('includes namespace count in detail fields', async () => {
@@ -71,10 +69,8 @@ describe('whoami handler — with cachedWhoami', () => {
     const tenant = makeTenant({ namespaces: ['production', 'staging'] });
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];
-    const fieldTexts = blocks
-      .filter((b) => b.type === 'section' && b.fields)
-      .flatMap((b) => b.fields.map((f) => f.text));
-    expect(fieldTexts.some((t) => t.includes('2'))).toBe(true);
+    const text = JSON.stringify(blocks);
+    expect(text).toContain('*Namespaces:* 2');
   });
 
   test('appends namespace table when namespaces exist', async () => {
@@ -107,9 +103,7 @@ describe('whoami handler — with cachedWhoami', () => {
     };
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];
-    const fieldTexts = blocks
-      .filter((b) => b.type === 'section' && b.fields)
-      .flatMap((b) => b.fields.map((f) => f.text));
-    expect(fieldTexts.some((t) => t.includes('N/A'))).toBe(true);
+    const text = JSON.stringify(blocks);
+    expect(text).toContain('N/A');
   });
 });

@@ -41,23 +41,11 @@ function statusLine(status, name, detail) {
 }
 
 function detailView(title, fields) {
-  const blocks = [
+  const lines = fields.map(({ label, value }) => `*${label}:* ${value}`);
+  return [
     { type: 'header', text: { type: 'plain_text', text: title } },
+    { type: 'section', text: { type: 'mrkdwn', text: lines.join('\n') } },
   ];
-
-  const fieldPairs = [];
-  for (const { label, value } of fields) {
-    fieldPairs.push({ type: 'mrkdwn', text: `*${label}*\n${value}` });
-  }
-
-  for (let i = 0; i < fieldPairs.length; i += 10) {
-    blocks.push({
-      type: 'section',
-      fields: fieldPairs.slice(i, i + 10),
-    });
-  }
-
-  return blocks;
 }
 
 function errorBlock(message) {

@@ -132,21 +132,17 @@ describe('help handler — show detail for a specific command', () => {
     const ctx = makeContext('whoami');
     await help.handler(ctx);
     const { blocks } = ctx.say.mock.calls[0][0];
-    const fieldTexts = blocks
-      .filter((b) => b.type === 'section' && b.fields)
-      .flatMap((b) => b.fields.map((f) => f.text));
-    expect(fieldTexts.some((t) => t.includes('Show identity'))).toBe(true);
-    expect(fieldTexts.some((t) => t.includes('/xc-whoami'))).toBe(true);
+    const text = JSON.stringify(blocks);
+    expect(text).toContain('Show identity');
+    expect(text).toContain('/xc-whoami');
   });
 
   test('detail view includes example phrases when intents exist', async () => {
     const ctx = makeContext('whoami');
     await help.handler(ctx);
     const { blocks } = ctx.say.mock.calls[0][0];
-    const fieldTexts = blocks
-      .filter((b) => b.type === 'section' && b.fields)
-      .flatMap((b) => b.fields.map((f) => f.text));
-    expect(fieldTexts.some((t) => t.includes('who are you'))).toBe(true);
+    const text = JSON.stringify(blocks);
+    expect(text).toContain('who are you');
   });
 
   test('returns error block for unknown command', async () => {

@@ -44,15 +44,16 @@ describe('slack-formatter', () => {
   });
 
   describe('detailView', () => {
-    test('returns blocks with header and fields', () => {
+    test('returns blocks with header and inline key-value lines', () => {
       const blocks = fmt.detailView('🔷 My LB', [
         { label: 'Namespace', value: 'prod' },
         { label: 'Domains', value: 'example.com' },
       ]);
       expect(blocks[0].type).toBe('header');
       expect(blocks[0].text.text).toBe('🔷 My LB');
-      const fieldTexts = blocks[1].fields.map((f) => f.text);
-      expect(fieldTexts).toContain('*Namespace*\nprod');
+      const text = blocks[1].text.text;
+      expect(text).toContain('*Namespace:* prod');
+      expect(text).toContain('*Domains:* example.com');
     });
   });
 
