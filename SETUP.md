@@ -109,24 +109,20 @@ This lets users DM the bot directly with natural language queries.
 
 Your `F5XC_API_URL` is your tenant console URL, e.g. `https://acme.console.ves.volterra.io`.
 
-## 8. Configure Environment
+## 8. Environment Variables
 
-Copy the example file and fill in the four required values:
+The bot is configured entirely through environment variables. How you provide them depends on your deployment method.
 
-```bash
-cp .env.example .env
-```
+### Required
 
-Edit `.env`:
+| Variable | Description |
+|----------|-------------|
+| `F5XC_API_URL` | Your XC tenant URL (e.g. `https://acme.console.ves.volterra.io`) |
+| `F5XC_API_TOKEN` | XC API token (read-only access recommended) |
+| `SLACK_BOT_TOKEN` | Slack bot OAuth token (`xoxb-...`) |
+| `SLACK_APP_TOKEN` | Slack app-level token for Socket Mode (`xapp-...`) |
 
-```
-F5XC_API_URL=https://your-tenant.console.ves.volterra.io
-F5XC_API_TOKEN=your-api-token-here
-SLACK_BOT_TOKEN=xoxb-your-bot-token
-SLACK_APP_TOKEN=xapp-your-app-token
-```
-
-Optional tuning:
+### Optional
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -138,37 +134,109 @@ Optional tuning:
 
 ## 9. Run the Bot
 
-### With Docker (recommended)
+### Docker Compose
+
+Create a `.env` file (see `.env.example`) and run:
 
 ```bash
+cp .env.example .env    # fill in the four required values
 docker compose up -d
-```
-
-Check that it started:
-
-```bash
 docker compose logs -f
 ```
 
-You should see:
-```
-{"level":"info","message":"Fetching whoami..."}
-{"level":"info","message":"whoami complete","tenant":"acme","namespaces":5,...}
-{"level":"info","message":"Loaded 21 commands"}
-{"level":"info","message":"NLP trained",...}
-{"level":"info","message":"Bot started",...}
+### Docker
+
+```bash
+docker run -d \
+  -e F5XC_API_URL=https://acme.console.ves.volterra.io \
+  -e F5XC_API_TOKEN=your-token \
+  -e SLACK_BOT_TOKEN=xoxb-your-token \
+  -e SLACK_APP_TOKEN=xapp-your-token \
+  -p 3000:3000 \
+  ghcr.io/f5xc-playground/f5xc-chatops:main
 ```
 
-### Without Docker
+### Kubernetes
+
+Create a Secret with the required variables:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: xc-chatops
+type: Opaque
+stringData:
+  F5XC_API_URL: https://acme.console.ves.volterra.io
+  F5XC_API_TOKEN: your-token
+  SLACK_BOT_TOKEN: xoxb-your-token
+  SLACK_APP_TOKEN: xapp-your-token
+```
+
+Reference it in your Deployment:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xc-chatops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xc-chatops
+  template:
+    metadata:
+      labels:
+        app: xc-chatops
+    spec:
+      containers:
+        - name: xc-chatops
+          image: ghcr.io/f5xc-playground/f5xc-chatops:main
+          envFrom:
+            - secretRef:
+                name: xc-chatops
+          ports:
+            - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+```
+
+Only run one replica — the bot uses Socket Mode, so multiple instances would receive duplicate events.
+
+### Node.js (local development)
 
 ```bash
 npm install
 npm start
 ```
 
+### Successful Startup
+
+Regardless of deployment method, you should see these log lines:
+
+```
+{"level":"info","message":"Fetching whoami..."}
+{"level":"info","message":"whoami complete","tenant":"acme","namespaces":5,...}
+{"level":"info","message":"Loaded 20 commands"}
+{"level":"info","message":"NLP trained",...}
+{"level":"info","message":"Bot started",...}
+```
+
 ### Health Check
 
-The bot exposes a health endpoint at `http://localhost:3000/healthz` (or whatever `PORT` is set to). It returns JSON with uptime, tenant name, loaded command count, and cache stats.
+The bot exposes `GET /healthz` on the configured `PORT` (default 3000). It returns JSON with uptime, tenant name, loaded command count, and cache stats. Use this for liveness probes and monitoring.
 
 ## Verify It Works
 
