@@ -37,6 +37,7 @@ module.exports = {
       return;
     }
     const blocks = [];
+    blocks.push({ type: 'header', text: { type: 'plain_text', text: `🤖 AI Assistant` } });
     const clean = (s) => formatter.htmlToMrkdwn(s);
 
     if (result.explain_log) {
@@ -44,13 +45,20 @@ module.exports = {
     } else if (result.gen_dashboard_filter) {
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: clean(result.gen_dashboard_filter.event_summary) || 'Dashboard filter generated.' } });
     } else if (result.list_response) {
-      const items = result.list_response.items || [];
-      const text = items.map((i) => `• ${clean(i.title || i)}`).join('\n');
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: text || 'No items.' } });
+      const lr = result.list_response;
+      const parts = [];
+      if (lr.summary) parts.push(clean(lr.summary));
+      const items = lr.items || [];
+      if (items.length > 0) {
+        parts.push(items.map((i) => `• ${clean(i.title || i.name || JSON.stringify(i))}`).join('\n'));
+      }
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: parts.join('\n\n') || 'No items.' } });
     } else if (result.widget_response) {
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: clean(result.widget_response.summary) || 'Widget data returned.' } });
     } else if (result.site_analysis_response) {
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: 'Site analysis data returned.' } });
+      const sa = result.site_analysis_response;
+      const summary = sa.summary || sa.site_summary || '';
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: clean(summary) || 'Site analysis data returned.' } });
     } else if (result.generic_response) {
       if (result.generic_response.is_error) {
         blocks.push(...formatter.errorBlock(clean(result.generic_response.summary) || 'AI Assistant returned an error.'));
@@ -59,18 +67,6 @@ module.exports = {
       }
     } else {
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: 'Received a response but could not parse it.' } });
-    }
-
-    if (result.follow_up_queries?.length) {
-      blocks.push({
-        type: 'actions',
-        elements: result.follow_up_queries.slice(0, 5).map((q, i) => ({
-          type: 'button',
-          text: { type: 'plain_text', text: q.length > 75 ? q.slice(0, 72) + '...' : q },
-          action_id: `ai_followup_${i}`,
-          value: JSON.stringify({ query: q, namespace: ns }),
-        })),
-      });
     }
 
     await say({ blocks });

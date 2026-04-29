@@ -58,18 +58,6 @@ module.exports = {
     const summary = formatter.htmlToMrkdwn(rawSummary) || `No suggestions returned.\n_Asked:_ "${query}"`;
     blocks.push({ type: 'section', text: { type: 'mrkdwn', text: summary } });
 
-    if (result.follow_up_queries?.length) {
-      blocks.push({
-        type: 'actions',
-        elements: result.follow_up_queries.slice(0, 5).map((q, i) => ({
-          type: 'button',
-          text: { type: 'plain_text', text: q.length > 75 ? q.slice(0, 72) + '...' : q },
-          action_id: `suggest_followup_${i}`,
-          value: JSON.stringify({ query: q, namespace: ns }),
-        })),
-      });
-    }
-
     await say({ blocks });
   },
 };

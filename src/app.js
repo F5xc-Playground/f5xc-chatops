@@ -243,37 +243,6 @@ async function start() {
     }
   });
 
-  // AI follow-up button handlers
-  app.action(/^(?:followup_|ai_followup_|suggest_followup_)\d+$/, async ({ action, ack, say }) => {
-    await ack();
-    const { query, namespace } = JSON.parse(action.value);
-    try {
-      await say(`🤖 Following up...`);
-      const result = await aiAssistant.query(namespace, query);
-      const blocks = [];
-      const rawSummary = result.generic_response?.summary
-        || result.explain_log?.summary
-        || result.list_response?.items?.map((i) => `• ${i.title || i}`).join('\n')
-        || 'No additional details.';
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: formatter.htmlToMrkdwn(rawSummary) } });
-      if (result.follow_up_queries?.length) {
-        blocks.push({
-          type: 'actions',
-          elements: result.follow_up_queries.slice(0, 5).map((q, i) => ({
-            type: 'button',
-            text: { type: 'plain_text', text: q.length > 75 ? q.slice(0, 72) + '...' : q },
-            action_id: `ai_followup_${i}`,
-            value: JSON.stringify({ query: q, namespace }),
-          })),
-        });
-      }
-      await say({ blocks });
-    } catch (err) {
-      log('error', 'AI follow-up failed', { error: err.message });
-      await say({ blocks: formatter.errorBlock(`Follow-up failed: ${err.message}`) });
-    }
-  });
-
   // NLP suggestion button handler
   app.action(/^suggest_/, async ({ action, ack, say, client }) => {
     await ack();
