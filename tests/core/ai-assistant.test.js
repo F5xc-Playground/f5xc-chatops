@@ -21,7 +21,6 @@ describe('AIAssistant', () => {
     const scope = nock(TENANT_URL)
       .post('/api/gen-ai/namespaces/system/query', {
         current_query: 'explain event abc',
-        namespace: 'system',
       })
       .reply(200, {
         query_id: 'q1',

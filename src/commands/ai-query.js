@@ -29,7 +29,11 @@ module.exports = {
     try {
       result = await aiAssistant.query(ns, query.trim());
     } catch (err) {
-      await say({ blocks: formatter.errorBlock(`AI Assistant query failed (${err.status || 'unknown'}): ${err.body || err.message}`) });
+      if (err.status === 404) {
+        await say({ blocks: formatter.errorBlock('AI Assistant is not available. The feature may not be enabled on this tenant.') });
+      } else {
+        await say({ blocks: formatter.errorBlock(`AI Assistant query failed: ${err.message}`) });
+      }
       return;
     }
     const blocks = [];

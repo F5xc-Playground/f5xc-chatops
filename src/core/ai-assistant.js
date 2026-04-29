@@ -6,7 +6,6 @@ class AIAssistant {
   async query(namespace, queryText) {
     return this._client.post(`/api/gen-ai/namespaces/${namespace}/query`, {
       current_query: queryText,
-      namespace,
     });
   }
 
