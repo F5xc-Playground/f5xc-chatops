@@ -52,11 +52,8 @@ module.exports = {
     const blocks = [];
     blocks.push({ type: 'header', text: { type: 'plain_text', text: `💡 Suggestions — ${name}` } });
 
-    const rawSummary = result.generic_response?.summary
-      || result.explain_log?.summary
-      || '';
-    const summary = formatter.htmlToMrkdwn(rawSummary) || `No suggestions returned.\n_Asked:_ "${query}"`;
-    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: summary } });
+    const content = formatter.extractAIContent(result) || `No suggestions returned.\n_Asked:_ "${query}"`;
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: content } });
 
     await say({ blocks });
   },

@@ -135,4 +135,41 @@ function htmlToMrkdwn(html) {
   return text.trim();
 }
 
-module.exports = { table, statusLine, detailView, errorBlock, footer, namespacePicker, resourcePicker, htmlToMrkdwn };
+const AI_SKIP_KEYS = new Set(['query_id', 'current_query', 'follow_up_queries', 'is_error', 'links']);
+const AI_RESPONSE_TYPES = [
+  'explain_log', 'gen_dashboard_filter', 'list_response',
+  'widget_response', 'site_analysis_response', 'generic_response',
+];
+
+function extractAIContent(result) {
+  const responseKey = AI_RESPONSE_TYPES.find((t) => result[t]);
+  const data = responseKey ? result[responseKey] : result;
+  if (!data || typeof data !== 'object') return '';
+
+  const text = _collectText(data);
+  if (data.is_error && text) return `⚠️ ${text}`;
+  return text;
+}
+
+function _collectText(obj) {
+  const parts = [];
+  for (const [key, val] of Object.entries(obj)) {
+    if (AI_SKIP_KEYS.has(key)) continue;
+    if (typeof val === 'string' && val.trim()) {
+      parts.push(htmlToMrkdwn(val));
+    } else if (Array.isArray(val) && val.length > 0) {
+      const listText = val
+        .map((item) => {
+          if (typeof item === 'string') return `• ${htmlToMrkdwn(item)}`;
+          if (item.title || item.name) return `• ${htmlToMrkdwn(item.title || item.name)}`;
+          return null;
+        })
+        .filter(Boolean)
+        .join('\n');
+      if (listText) parts.push(listText);
+    }
+  }
+  return parts.join('\n\n');
+}
+
+module.exports = { table, statusLine, detailView, errorBlock, footer, namespacePicker, resourcePicker, htmlToMrkdwn, extractAIContent };

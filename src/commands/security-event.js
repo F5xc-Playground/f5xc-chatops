@@ -41,23 +41,11 @@ module.exports = {
     const blocks = [];
     blocks.push({ type: 'header', text: { type: 'plain_text', text: `🔒 Security Event: ${supportId.trim()}` } });
 
-    if (result.explain_log) {
-      const log = result.explain_log;
-      if (log.summary) {
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: formatter.htmlToMrkdwn(log.summary) } });
-      }
-      if (log.actions?.length) {
-        blocks.push({ type: 'divider' });
-        blocks.push({
-          type: 'section',
-          text: { type: 'mrkdwn', text: '*Recommended Actions:*\n' + log.actions.map((a) => `• ${formatter.htmlToMrkdwn(a)}`).join('\n') },
-        });
-      }
-    } else if (result.generic_response) {
-      blocks.push({
-        type: 'section',
-        text: { type: 'mrkdwn', text: formatter.htmlToMrkdwn(result.generic_response.summary) || 'No details available.' },
-      });
+    const content = formatter.extractAIContent(result);
+    if (content) {
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: content } });
+    } else {
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: 'No details available for this event.' } });
     }
 
     await say({ blocks });
