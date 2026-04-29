@@ -95,10 +95,16 @@ async function renderList(say, formatter, resourceType, namespace, items, cached
   }
 
   const displayed = items.slice(0, MAX_DISPLAY_ITEMS);
-  const rows = displayed.map((item) => ({
-    name: item.name || item.metadata?.name || 'unknown',
-    labels: Object.keys(item.labels || item.metadata?.labels || {}).length,
-  }));
+  const isLB = resourceType.includes('loadbalancer');
+  const columns = isLB ? ['name', 'domains'] : ['name'];
+  const rows = displayed.map((item) => {
+    const row = { name: item.name || item.metadata?.name || 'unknown' };
+    if (isLB) {
+      const domains = item.spec?.domains || item.get_spec?.domains || [];
+      row.domains = domains.length > 0 ? domains.join(', ') : '-';
+    }
+    return row;
+  });
 
   const title = items.length > MAX_DISPLAY_ITEMS
     ? `📋 ${resourceType} — ${namespace} (showing ${MAX_DISPLAY_ITEMS} of ${items.length})`
@@ -106,7 +112,7 @@ async function renderList(say, formatter, resourceType, namespace, items, cached
 
   const blocks = [
     { type: 'header', text: { type: 'plain_text', text: title } },
-    { type: 'section', text: { type: 'mrkdwn', text: formatter.table(['name', 'labels'], rows) } },
+    { type: 'section', text: { type: 'mrkdwn', text: formatter.table(columns, rows) } },
     formatter.footer({ durationMs, cached, namespace }),
   ];
 
