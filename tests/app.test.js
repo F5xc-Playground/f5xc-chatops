@@ -48,7 +48,7 @@ describe('buildConfig', () => {
     expect(config.logLevel).toBe('info');
     expect(config.cacheWarmTTL).toBe(300);
     expect(config.cacheStaticTTL).toBe(3600);
-    expect(config.nlpThreshold).toBe(0.65);
+    expect(config.nlpThreshold).toBe(0.75);
   });
 
   test('overrides defaults with env vars', () => {

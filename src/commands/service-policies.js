@@ -12,6 +12,9 @@ module.exports = {
     { utterance: 'show service policies', intent: 'service.policies' },
     { utterance: 'list attached policies', intent: 'service.policies' },
     { utterance: 'what policies are applied', intent: 'service.policies' },
+    { utterance: 'show me service policies on my-lb in prod', intent: 'service.policies' },
+    { utterance: 'what policies are attached to the load balancer', intent: 'service.policies' },
+    { utterance: 'check service policy enforcement on my LB', intent: 'service.policies' },
   ],
 
   entities: [],

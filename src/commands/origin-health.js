@@ -13,6 +13,9 @@ module.exports = {
     { utterance: 'check backend server status', intent: 'origin.health' },
     { utterance: 'which origins are down', intent: 'origin.health' },
     { utterance: 'origin pool status', intent: 'origin.health' },
+    { utterance: 'show me origin health in prod', intent: 'origin.health' },
+    { utterance: 'are my backend servers healthy', intent: 'origin.health' },
+    { utterance: 'check origin pool status for my-lb', intent: 'origin.health' },
   ],
 
   entities: [],

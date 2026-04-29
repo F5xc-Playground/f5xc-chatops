@@ -8,7 +8,7 @@ const FRESH_MODIFIERS = [
 ];
 
 class NLPEngine {
-  constructor({ threshold = 0.65 } = {}) {
+  constructor({ threshold = 0.75 } = {}) {
     this._threshold = threshold;
     this._intents = [];
     this._namespaces = [];

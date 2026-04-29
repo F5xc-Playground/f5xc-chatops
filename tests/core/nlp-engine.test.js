@@ -4,7 +4,7 @@ describe('NLPEngine', () => {
   let engine;
 
   beforeAll(async () => {
-    engine = new NLPEngine({ threshold: 0.65 });
+    engine = new NLPEngine({ threshold: 0.75 });
 
     engine.addIntents([
       { utterance: 'what quotas are running high', intent: 'quota.check' },
@@ -32,18 +32,18 @@ describe('NLPEngine', () => {
   test('classifies a quota intent', async () => {
     const result = await engine.process('how are our quotas looking');
     expect(result.intent).toBe('quota.check');
-    expect(result.confidence).toBeGreaterThan(0.65);
+    expect(result.confidence).toBeGreaterThan(0.75);
   });
 
   test('classifies a help intent', async () => {
     const result = await engine.process('what can you do for me');
     expect(result.intent).toBe('help');
-    expect(result.confidence).toBeGreaterThan(0.65);
+    expect(result.confidence).toBeGreaterThan(0.75);
   });
 
   test('returns low confidence for gibberish', async () => {
     const result = await engine.process('asdfghjkl zxcvbnm');
-    expect(result.confidence).toBeLessThan(0.65);
+    expect(result.confidence).toBeLessThan(0.75);
   });
 
   test('extracts namespace entity', async () => {

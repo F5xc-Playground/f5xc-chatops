@@ -28,7 +28,7 @@ function buildConfig(env) {
     logLevel: env.LOG_LEVEL || 'info',
     cacheWarmTTL: parseInt(env.CACHE_WARM_TTL, 10) || 300,
     cacheStaticTTL: parseInt(env.CACHE_STATIC_TTL, 10) || 3600,
-    nlpThreshold: parseFloat(env.NLP_THRESHOLD) || 0.65,
+    nlpThreshold: parseFloat(env.NLP_THRESHOLD) || 0.75,
     port: parseInt(env.PORT, 10) || 3000,
   };
 }
@@ -133,6 +133,22 @@ async function start() {
     app.command(cmd, async ({ command, ack, say, client }) => {
       await ack();
       const rawArgs = command.text || '';
+
+      if (/^--help\b/.test(rawArgs.trim())) {
+        const fields = [
+          { label: 'Description', value: mod.meta.description },
+          { label: 'Slash Command', value: `\`${cmd}\`` },
+        ];
+        if (mod.intents && mod.intents.length > 0) {
+          fields.push({
+            label: 'Example Phrases',
+            value: mod.intents.slice(0, 5).map((i) => `"${i.utterance}"`).join('\n'),
+          });
+        }
+        await say({ blocks: formatter.detailView(mod.meta.name, fields) });
+        return;
+      }
+
       const fresh = /--fresh\b/.test(rawArgs);
       const cleanedArgs = rawArgs.replace(/--fresh\b/g, '').trim();
       const parts = cleanedArgs.split(/\s+/).filter(Boolean);

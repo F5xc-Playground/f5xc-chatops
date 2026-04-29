@@ -13,6 +13,9 @@ module.exports = {
     { utterance: 'is the WAF in blocking mode', intent: 'waf.status' },
     { utterance: 'WAF configuration', intent: 'waf.status' },
     { utterance: 'check the web application firewall', intent: 'waf.status' },
+    { utterance: 'show me the WAF config for my-lb', intent: 'waf.status' },
+    { utterance: 'what WAF mode is my load balancer using', intent: 'waf.status' },
+    { utterance: 'is WAF blocking or monitoring on my-lb', intent: 'waf.status' },
   ],
 
   entities: [],

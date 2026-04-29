@@ -6,15 +6,15 @@ Get answers about your tenant without opening the console. Check what's deployed
 
 ## Commands
 
-Every slash command also works as a natural language query — @mention the bot or DM it.
+Every slash command also works as a natural language query — @mention the bot or DM it. Add `--help` to any slash command to see its description and example phrases.
 
 ### See what's running
 
 `/xc-ns <namespace>` — Namespace resource summary
 > *"what's in the prod namespace"* · *"give me a summary of namespace staging"*
 
-`/xc-list <namespace> <type>` — List resources by type
-> *"list all load balancers in prod"* · *"show WAF policies in staging"*
+`/xc-list [namespace] [type]` — List resources by type. Load balancer types show a cross-namespace inventory when no namespace is given; other types prompt for a namespace.
+> *"list all load balancers"* · *"list all load balancers in prod"* · *"show WAF policies in staging"*
 
 `/xc-whoami` — Bot identity and accessible namespaces
 > *"what namespaces can you see"* · *"what roles do you have"*
@@ -25,7 +25,7 @@ Every slash command also works as a natural language query — @mention the bot 
 > *"tell me about the load balancer"* · *"what is configured on the LB"*
 
 `/xc-diagram <namespace> <lb>` — Visual LB chain diagram (PNG uploaded to channel)
-> *"diagram the load balancer chain"* · *"visualize the load balancer"*
+> *"diagram the load balancer chain"* · *"show me a diagram of demo-shop-fe"*
 
 `/xc-origins <namespace> <pool>` — Origin pool servers
 > *"show origin pool health"* · *"which origins are down"*
@@ -37,8 +37,8 @@ Every slash command also works as a natural language query — @mention the bot 
 
 ### Check quota utilization
 
-`/xc-quota` — Tenant quota utilization (color-coded at 80% and 100%)
-> *"show me quota usage"* · *"what quotas are running hot"* · *"how much capacity do we have left"*
+`/xc-quota [filter]` — Tenant-wide quota utilization. Filter by tier (`critical`, `warning`, `all`) or search by resource name.
+> *"show me quota usage"* · *"show me critical quotas"* · *"quota usage for dns"*
 
 ### Review security posture
 
@@ -57,7 +57,7 @@ Every slash command also works as a natural language query — @mention the bot 
 ### Investigate security events
 
 `/xc-event <support-id>` — AI-powered security event explanation
-> *"explain security event abc-123"* · *"look up request id abc-123"* · *"investigate security event"*
+> *"explain security event abc-123"* · *"look up request id abc-123"*
 
 ### Ask the AI Assistant
 
@@ -83,7 +83,7 @@ Every slash command also works as a natural language query — @mention the bot 
 
 ### Help
 
-`/xc-help` — List all commands or get detail on one
+`/xc-help [command-name]` — List all commands or get detail on one
 > *"what can you do"* · *"how do I use this"*
 
 ## How It Works
@@ -93,12 +93,12 @@ If the bot isn't sure what you mean, it suggests the closest matches as buttons.
 Results are cached for 5 minutes to avoid hammering the API. Add `--fresh` to any slash command (or say "force refresh", "no cache", "live data") to bypass the cache.
 
 ```
-/xc-quota prod --fresh
+/xc-list prod http_loadbalancer --fresh
 ```
 
 ## How Output Looks
 
-**Tables** — Monospace grids with auto-sized columns. Used for quota checks, resource lists, DNS zones.
+**Tables** — Native Slack table blocks. Lists over 100 rows are capped with a full CSV file uploaded to the channel.
 
 **Status indicators** — Color-coded emoji: 🟢 healthy · 🟡 warning · 🔴 critical · ⚪ unknown
 

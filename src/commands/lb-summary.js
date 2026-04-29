@@ -13,6 +13,9 @@ module.exports = {
     { utterance: 'LB summary', intent: 'lb.summary' },
     { utterance: 'describe the load balancer', intent: 'lb.summary' },
     { utterance: 'what is configured on the LB', intent: 'lb.summary' },
+    { utterance: 'show me details for my-lb in prod', intent: 'lb.summary' },
+    { utterance: 'summarize load balancer demo-shop-fe', intent: 'lb.summary' },
+    { utterance: 'show me the config of the load balancer', intent: 'lb.summary' },
   ],
 
   entities: [],

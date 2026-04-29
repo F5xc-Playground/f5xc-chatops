@@ -157,10 +157,14 @@ module.exports = {
 
   intents: [
     { utterance: 'diagram the load balancer chain', intent: 'diagram.lb' },
+    { utterance: 'show me a diagram of the load balancer', intent: 'diagram.lb' },
+    { utterance: 'show me an xc diagram of demo-shop-fe', intent: 'diagram.lb' },
     { utterance: 'show me a map of the LB', intent: 'diagram.lb' },
     { utterance: 'visualize the load balancer', intent: 'diagram.lb' },
     { utterance: 'draw the LB topology', intent: 'diagram.lb' },
     { utterance: 'generate a diagram for the load balancer', intent: 'diagram.lb' },
+    { utterance: 'diagram my-lb in prod namespace', intent: 'diagram.lb' },
+    { utterance: 'xc diagram for my load balancer', intent: 'diagram.lb' },
   ],
 
   entities: [],

@@ -105,7 +105,7 @@ This lets users DM the bot directly with natural language queries.
 7. Click **Generate**
 8. Copy the token — this is your `F5XC_API_TOKEN`
 
-**Recommended:** Use a service account with read-only access. The bot only needs `GET` requests to read resources. The AI Assistant features (`/xc-ask`, `/xc-event`, `/xc-suggest`) additionally use `POST` to send queries, but never modify tenant configuration.
+**Recommended:** Use a service account with read-only access. The bot only needs `GET` requests to read resources. The AI Assistant features (`/xc-ask`, `/xc-event`, `/xc-suggest`) and the cross-namespace inventory (`/xc-list` without a namespace) use `POST`, but never modify tenant configuration.
 
 Your `F5XC_API_URL` is your tenant console URL, e.g. `https://acme.console.ves.volterra.io`.
 
@@ -129,7 +129,7 @@ The bot is configured entirely through environment variables. How you provide th
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, or `error` |
 | `CACHE_WARM_TTL` | `300` | Seconds to cache frequently-changing data |
 | `CACHE_STATIC_TTL` | `3600` | Seconds to cache rarely-changing data (namespaces, roles) |
-| `NLP_THRESHOLD` | `0.65` | Confidence threshold for natural language intent matching |
+| `NLP_THRESHOLD` | `0.75` | Confidence threshold for natural language intent matching |
 | `PORT` | `3000` | Health endpoint port |
 
 ## 9. Run the Bot
@@ -153,7 +153,7 @@ docker run -d \
   -e SLACK_BOT_TOKEN=xoxb-your-token \
   -e SLACK_APP_TOKEN=xapp-your-token \
   -p 3000:3000 \
-  ghcr.io/f5xc-playground/f5xc-chatops:main
+  ghcr.io/f5xc-playground/f5xc-chatops:0.1
 ```
 
 ### Kubernetes
@@ -192,7 +192,7 @@ spec:
     spec:
       containers:
         - name: xc-chatops
-          image: ghcr.io/f5xc-playground/f5xc-chatops:main
+          image: ghcr.io/f5xc-playground/f5xc-chatops:0.1
           envFrom:
             - secretRef:
                 name: xc-chatops

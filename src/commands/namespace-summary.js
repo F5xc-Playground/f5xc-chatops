@@ -27,6 +27,9 @@ module.exports = {
     { utterance: 'what is in namespace staging', intent: 'namespace.summary' },
     { utterance: 'namespace overview for prod', intent: 'namespace.summary' },
     { utterance: 'give me a summary of namespace system', intent: 'namespace.summary' },
+    { utterance: 'show me a namespace summary for prod', intent: 'namespace.summary' },
+    { utterance: 'how many resources are in namespace prod', intent: 'namespace.summary' },
+    { utterance: 'show me resource counts in staging', intent: 'namespace.summary' },
   ],
 
   entities: [],

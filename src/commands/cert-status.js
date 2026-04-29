@@ -13,6 +13,9 @@ module.exports = {
     { utterance: 'check certificate expiration', intent: 'cert.status' },
     { utterance: 'are any certificates expired', intent: 'cert.status' },
     { utterance: 'TLS cert status', intent: 'cert.status' },
+    { utterance: 'show me certificate expiration in prod', intent: 'cert.status' },
+    { utterance: 'when do my certs expire', intent: 'cert.status' },
+    { utterance: 'check TLS certificates in staging', intent: 'cert.status' },
   ],
 
   entities: [],

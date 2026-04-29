@@ -12,6 +12,10 @@ module.exports = {
     { utterance: 'list DNS zones', intent: 'dns.status' },
     { utterance: 'DNS status', intent: 'dns.status' },
     { utterance: 'what DNS zones are configured', intent: 'dns.status' },
+    { utterance: 'show me DNS zones in prod', intent: 'dns.status' },
+    { utterance: 'what DNS is configured in namespace staging', intent: 'dns.status' },
+    { utterance: 'show GSLB status', intent: 'dns.status' },
+    { utterance: 'list DNS load balancers', intent: 'dns.status' },
   ],
 
   entities: [],
