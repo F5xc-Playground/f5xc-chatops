@@ -28,6 +28,69 @@ describe('infra commands plugin contracts', () => {
   });
 });
 
+describe('alert-status handler', () => {
+  test('shows active alerts sorted by severity', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          alerts: [
+            { labels: { alertname: 'LowDisk', severity: 'warning', namespace: 'prod' }, annotations: { summary: 'Disk usage high' } },
+            { labels: { alertname: 'SiteDown', severity: 'critical', namespace: 'prod' }, annotations: { summary: 'Site unreachable' } },
+          ],
+        }),
+      },
+    };
+    await alertStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('SiteDown');
+    expect(text).toContain('LowDisk');
+    expect(text.indexOf('SiteDown')).toBeLessThan(text.indexOf('LowDisk'));
+  });
+
+  test('shows green message when no alerts', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: { get: jest.fn().mockResolvedValue({ alerts: [] }) },
+    };
+    await alertStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('No active alerts');
+  });
+
+  test('queries all namespaces when no namespace given', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: { get: jest.fn().mockResolvedValue({ alerts: [] }) },
+    };
+    await alertStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: {},
+      formatter,
+    });
+    expect(tenant.client.get).toHaveBeenCalledWith('/api/data/namespaces/system/all_ns_alerts');
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('all namespaces');
+  });
+});
+
 describe('site-status handler', () => {
   test('lists sites with status', async () => {
     const messages = [];

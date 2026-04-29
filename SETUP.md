@@ -67,7 +67,7 @@ For every command, set the **Request URL** to anything (Socket Mode ignores it, 
 | `/xc-sites` | All sites with health |
 | `/xc-site` | Single site detail |
 | `/xc-dns` | DNS zones |
-| `/xc-alerts` | Alert policies |
+| `/xc-alerts` | Active firing alerts |
 
 You don't have to register all of them — the bot works with whatever subset you add. Natural language queries (@mentions and DMs) work regardless of which slash commands are registered.
 

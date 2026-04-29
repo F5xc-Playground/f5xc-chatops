@@ -78,8 +78,8 @@ Every slash command also works as a natural language query — @mention the bot 
 `/xc-dns <namespace>` — DNS zones and GSLB
 > *"show DNS zones"* · *"what DNS zones are configured"*
 
-`/xc-alerts <namespace>` — Alert policies and receivers
-> *"any active alerts"* · *"check alerts"*
+`/xc-alerts [namespace]` — Active firing alerts (all namespaces if omitted)
+> *"any alerts firing"* · *"are there any active alerts"*
 
 ### Help
 
