@@ -76,11 +76,22 @@ describe('slack-formatter', () => {
   });
 
   describe('namespacePicker', () => {
-    test('renders buttons for each namespace', () => {
-      const blocks = fmt.namespacePicker('quota.check', ['prod', 'staging', 'system']);
-      const actions = blocks.find((b) => b.type === 'actions');
-      expect(actions.elements).toHaveLength(3);
-      expect(actions.elements[0].text.text).toBe('prod');
+    test('renders dropdown with sorted namespaces', () => {
+      const blocks = fmt.namespacePicker('quota.check', ['system', 'prod', 'staging']);
+      const section = blocks.find((b) => b.type === 'section');
+      const select = section.accessory;
+      expect(select.type).toBe('static_select');
+      expect(select.action_id).toBe('ns_select');
+      expect(select.options).toHaveLength(3);
+      expect(select.options[0].text.text).toBe('prod');
+      expect(select.options[1].text.text).toBe('staging');
+      expect(select.options[2].text.text).toBe('system');
+    });
+
+    test('filters wildcard namespace', () => {
+      const blocks = fmt.namespacePicker('quota.check', ['prod', '*', 'staging']);
+      const select = blocks[0].accessory;
+      expect(select.options).toHaveLength(2);
     });
   });
 });

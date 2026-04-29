@@ -69,20 +69,20 @@ function footer({ durationMs, cached, namespace }) {
 }
 
 function namespacePicker(intentName, namespaces) {
-  const real = namespaces.filter((ns) => ns !== '*');
+  const real = namespaces.filter((ns) => ns !== '*').sort();
   return [
     {
       type: 'section',
       text: { type: 'mrkdwn', text: 'Which namespace?' },
-    },
-    {
-      type: 'actions',
-      elements: real.slice(0, 20).map((ns) => ({
-        type: 'button',
-        text: { type: 'plain_text', text: ns },
-        action_id: `ns_pick_${ns}`,
-        value: JSON.stringify({ intent: intentName, namespace: ns }),
-      })),
+      accessory: {
+        type: 'static_select',
+        placeholder: { type: 'plain_text', text: 'Select a namespace...' },
+        action_id: 'ns_select',
+        options: real.slice(0, 100).map((ns) => ({
+          text: { type: 'plain_text', text: ns.length > 75 ? ns.slice(0, 72) + '...' : ns },
+          value: JSON.stringify({ intent: intentName, namespace: ns }),
+        })),
+      },
     },
   ];
 }

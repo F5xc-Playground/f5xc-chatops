@@ -215,10 +215,10 @@ async function start() {
     }
   }
 
-  // Namespace picker button handler
-  app.action(/^ns_pick_/, async ({ action, ack, say, client }) => {
+  // Namespace dropdown handler
+  app.action('ns_select', async ({ action, ack, say, client }) => {
     await ack();
-    const { intent, namespace } = JSON.parse(action.value);
+    const { intent, namespace } = JSON.parse(action.selected_option.value);
     const mod = intentMap[intent];
     if (!mod) return;
     const args = { namespace, fresh: false, raw: '' };
