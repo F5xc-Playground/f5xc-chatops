@@ -43,7 +43,17 @@ module.exports = {
       return;
     }
 
-    const resourceType = args.resourceType || args.resourceName || 'http_loadbalancer';
+    let resourceType = args.resourceType || args.resourceName || 'http_loadbalancer';
+    if (!RESOURCE_PATHS[resourceType]) {
+      const match = Object.keys(RESOURCE_PATHS).find(
+        (k) => RESOURCE_PATHS[k] === resourceType || k + 's' === resourceType
+      );
+      if (match) resourceType = match;
+    }
+    if (!RESOURCE_PATHS[resourceType] && resourceType.endsWith('ies')) {
+      const yForm = resourceType.replace(/ies$/, 'y');
+      if (RESOURCE_PATHS[yForm]) resourceType = yForm;
+    }
     const apiPath = RESOURCE_PATHS[resourceType];
 
     if (!apiPath) {

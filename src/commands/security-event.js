@@ -44,19 +44,19 @@ module.exports = {
     if (result.explain_log) {
       const log = result.explain_log;
       if (log.summary) {
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: log.summary } });
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: formatter.htmlToMrkdwn(log.summary) } });
       }
       if (log.actions?.length) {
         blocks.push({ type: 'divider' });
         blocks.push({
           type: 'section',
-          text: { type: 'mrkdwn', text: '*Recommended Actions:*\n' + log.actions.map((a) => `• ${a}`).join('\n') },
+          text: { type: 'mrkdwn', text: '*Recommended Actions:*\n' + log.actions.map((a) => `• ${formatter.htmlToMrkdwn(a)}`).join('\n') },
         });
       }
     } else if (result.generic_response) {
       blocks.push({
         type: 'section',
-        text: { type: 'mrkdwn', text: result.generic_response.summary || 'No details available.' },
+        text: { type: 'mrkdwn', text: formatter.htmlToMrkdwn(result.generic_response.summary) || 'No details available.' },
       });
     }
 

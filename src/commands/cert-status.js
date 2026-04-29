@@ -67,7 +67,10 @@ async function renderCerts(say, formatter, ns, lbs, cached, durationMs) {
   }
 
   if (certLines.length === 0) {
-    await say({ blocks: formatter.errorBlock(`No certificate data found for LBs in namespace \`${ns}\`.`) });
+    const msg = lbs.length === 0
+      ? `No load balancers found in namespace \`${ns}\`.`
+      : `No TLS certificates attached to the ${lbs.length} load balancer(s) in namespace \`${ns}\`. Standalone certificates are not shown here.`;
+    await say({ blocks: formatter.errorBlock(msg) });
     return;
   }
 

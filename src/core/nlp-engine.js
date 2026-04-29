@@ -2,7 +2,10 @@ const { containerBootstrap } = require('@nlpjs/core');
 const { Nlp } = require('@nlpjs/nlp');
 const { LangEn } = require('@nlpjs/lang-en');
 
-const FRESH_MODIFIERS = ['force refresh', 'fresh', 'no cache', 'live data', 'live'];
+const FRESH_MODIFIERS = [
+  'with force refresh', 'with no cache', 'with live data', 'with fresh',
+  'force refresh', 'no cache', 'live data', 'fresh', 'live',
+];
 
 class NLPEngine {
   constructor({ threshold = 0.65 } = {}) {
@@ -56,6 +59,8 @@ class NLPEngine {
     const entities = {};
 
     const lowerText = text.toLowerCase();
+
+    // Pass 1: explicit prepositional patterns (high confidence)
     for (const ns of this._namespaces) {
       const nsLower = ns.toLowerCase();
       const nsPatterns = [
@@ -72,12 +77,18 @@ class NLPEngine {
         }
       }
       if (entities.namespace) break;
-      // Word-boundary match as fallback for longer namespace names (4+ chars)
-      if (nsLower.length >= 4) {
-        const regex = new RegExp(`\\b${nsLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
-        if (regex.test(lowerText)) {
-          entities.namespace = ns;
-          break;
+    }
+
+    // Pass 2: word-boundary fallback only if no prepositional match found
+    if (!entities.namespace) {
+      for (const ns of this._namespaces) {
+        const nsLower = ns.toLowerCase();
+        if (nsLower.length >= 4) {
+          const regex = new RegExp(`(?:^|\\s)${nsLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`);
+          if (regex.test(lowerText)) {
+            entities.namespace = ns;
+            break;
+          }
         }
       }
     }

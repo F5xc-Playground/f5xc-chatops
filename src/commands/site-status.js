@@ -44,15 +44,24 @@ async function renderSites(say, formatter, sites, cached, durationMs) {
 
   const lines = sites.map((site) => {
     const name = site.metadata?.name || site.name || 'unknown';
-    const siteType = site.spec?.site_type || 'unknown';
-    const version = site.status?.software_version || 'N/A';
-    const connState = site.status?.connected_state?.toLowerCase() || '';
-    const opState = site.status?.operational_state?.toLowerCase() || '';
+    const siteType = site.spec?.site_type || site.labels?.['ves.io/siteType'] || 'unknown';
+    const version = site.status?.software_version
+      || site.spec?.volterra_software_version
+      || site.system_metadata?.initializers?.pending?.[0]?.name
+      || '';
+    const connState = (
+      site.status?.connected_state
+      || site.spec?.connected_state
+      || site.spec?.site_state
+      || ''
+    ).toLowerCase();
+    const opState = (site.status?.operational_state || '').toLowerCase();
     let status = 'unknown';
-    if (connState === 'connected' || opState === 'installed') status = 'healthy';
+    if (connState === 'connected' || connState === 'online' || opState === 'installed') status = 'healthy';
     else if (connState === 'degraded' || opState === 'upgrading') status = 'warning';
     else if (connState === 'disconnected' || opState === 'failed') status = 'down';
-    return formatter.statusLine(status, name, `${siteType} · v${version}`);
+    const versionLabel = version ? `v${version}` : '';
+    return formatter.statusLine(status, name, [siteType, versionLabel].filter(Boolean).join(' · '));
   });
 
   const blocks = [

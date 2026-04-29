@@ -16,8 +16,7 @@ module.exports = {
   handler: async ({ say, args, commandRegistry, formatter }) => {
     const query = (args.raw || '').trim();
 
-    if (query) {
-      // Show detail for a specific command
+    if (query && !query.includes(' ')) {
       const cmd = commandRegistry.commands.find((c) => c.meta.name === query);
       if (!cmd) {
         await say({ blocks: formatter.errorBlock(`Unknown command: "${query}". Try \`/xc-help\` to see all commands.`) });
@@ -39,7 +38,6 @@ module.exports = {
       return;
     }
 
-    // List all commands grouped by category
     const grouped = {};
     for (const cmd of commandRegistry.commands) {
       const cat = cmd.meta.category || 'other';

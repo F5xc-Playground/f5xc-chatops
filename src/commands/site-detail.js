@@ -33,15 +33,32 @@ module.exports = {
     }
 
     const startTime = Date.now();
-    const site = await tenant.client.get(`/api/config/namespaces/system/sites/${name}`);
+    let site;
+    try {
+      site = await tenant.client.get(`/api/config/namespaces/system/sites/${name}`);
+    } catch (err) {
+      if (err.status === 404) {
+        const listData = await tenant.client.get('/api/config/namespaces/system/sites');
+        site = (listData.items || []).find(
+          (s) => (s.metadata?.name || s.name) === name
+        );
+        if (!site) {
+          await say({ blocks: formatter.errorBlock(`Site \`${name}\` not found.`) });
+          return;
+        }
+      } else {
+        throw err;
+      }
+    }
     const spec = site.spec || {};
     const status = site.status || {};
 
     const fields = [
       { label: 'Name', value: site.metadata?.name || name },
-      { label: 'Type', value: spec.site_type || 'N/A' },
-      { label: 'SW Version', value: status.software_version || 'N/A' },
+      { label: 'Type', value: spec.site_type || site.labels?.['ves.io/siteType'] || 'N/A' },
+      { label: 'SW Version', value: status.software_version || spec.volterra_software_version || 'N/A' },
       { label: 'OS Version', value: status.os_version || 'N/A' },
+      { label: 'State', value: status.connected_state || spec.connected_state || spec.site_state || 'N/A' },
     ];
 
     if (status.node_info?.length) {

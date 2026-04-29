@@ -35,8 +35,18 @@ module.exports = {
     }
 
     const startTime = Date.now();
-    const data = await tenant.client.get(`/api/web/namespaces/${ns}/quotas`);
-    const items = data.items || [];
+    let items;
+    try {
+      const data = await tenant.client.get(`/api/web/namespaces/${ns}/quota/usage`);
+      items = data.items || data.quota_usage || [];
+    } catch (err) {
+      if (err.status === 403 || err.status === 404) {
+        const data = await tenant.client.get(`/api/web/namespaces/${ns}/quotas`);
+        items = data.items || [];
+      } else {
+        throw err;
+      }
+    }
     cache.set(cacheKey, items, 300);
 
     await renderQuotas(say, formatter, ns, items, false, Date.now() - startTime);

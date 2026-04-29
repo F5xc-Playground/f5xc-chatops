@@ -37,24 +37,25 @@ module.exports = {
       return;
     }
     const blocks = [];
+    const clean = (s) => formatter.htmlToMrkdwn(s);
 
     if (result.explain_log) {
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: result.explain_log.summary || 'No summary.' } });
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: clean(result.explain_log.summary) || 'No summary.' } });
     } else if (result.gen_dashboard_filter) {
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: result.gen_dashboard_filter.event_summary || 'Dashboard filter generated.' } });
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: clean(result.gen_dashboard_filter.event_summary) || 'Dashboard filter generated.' } });
     } else if (result.list_response) {
       const items = result.list_response.items || [];
-      const text = items.map((i) => `• ${i.title || i}`).join('\n');
+      const text = items.map((i) => `• ${clean(i.title || i)}`).join('\n');
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: text || 'No items.' } });
     } else if (result.widget_response) {
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: result.widget_response.summary || 'Widget data returned.' } });
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: clean(result.widget_response.summary) || 'Widget data returned.' } });
     } else if (result.site_analysis_response) {
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: 'Site analysis data returned.' } });
     } else if (result.generic_response) {
       if (result.generic_response.is_error) {
-        blocks.push(...formatter.errorBlock(result.generic_response.summary || 'AI Assistant returned an error.'));
+        blocks.push(...formatter.errorBlock(clean(result.generic_response.summary) || 'AI Assistant returned an error.'));
       } else {
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: result.generic_response.summary || 'No response.' } });
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: clean(result.generic_response.summary) || 'No response.' } });
       }
     } else {
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: 'Received a response but could not parse it.' } });

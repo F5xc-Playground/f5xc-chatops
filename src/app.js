@@ -251,11 +251,11 @@ async function start() {
       await say(`🤖 Following up...`);
       const result = await aiAssistant.query(namespace, query);
       const blocks = [];
-      const summary = result.generic_response?.summary
+      const rawSummary = result.generic_response?.summary
         || result.explain_log?.summary
         || result.list_response?.items?.map((i) => `• ${i.title || i}`).join('\n')
         || 'No additional details.';
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: summary } });
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: formatter.htmlToMrkdwn(rawSummary) } });
       if (result.follow_up_queries?.length) {
         blocks.push({
           type: 'actions',

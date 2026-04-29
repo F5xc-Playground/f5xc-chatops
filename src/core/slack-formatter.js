@@ -108,4 +108,35 @@ function resourcePicker(intentName, namespace, resourceNames, label) {
   return blocks;
 }
 
-module.exports = { table, statusLine, detailView, errorBlock, footer, namespacePicker, resourcePicker };
+function htmlToMrkdwn(html) {
+  if (!html || !html.includes('<')) return html || '';
+  let text = html;
+  text = text.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, (_, content) => `*${content.trim()}*\n`);
+  text = text.replace(/<strong>(.*?)<\/strong>/gi, '*$1*');
+  text = text.replace(/<b>(.*?)<\/b>/gi, '*$1*');
+  text = text.replace(/<em>(.*?)<\/em>/gi, '_$1_');
+  text = text.replace(/<i>(.*?)<\/i>/gi, '_$1_');
+  text = text.replace(/<code>(.*?)<\/code>/gi, '`$1`');
+  text = text.replace(/<a\s+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '<$1|$2>');
+  text = text.replace(/<hr\s*\/?>/gi, '---');
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_, items) => {
+    let idx = 0;
+    return items.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (__, content) => {
+      idx++;
+      return `${idx}. ${content.replace(/<\/?p[^>]*>/gi, '').trim()}\n`;
+    });
+  });
+  text = text.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (_, items) =>
+    items.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (__, content) =>
+      `• ${content.replace(/<\/?p[^>]*>/gi, '').trim()}\n`
+    )
+  );
+  text = text.replace(/<\/?(?:p|div)[^>]*>/gi, '\n');
+  text = text.replace(/<[^>]+>/g, '');
+  text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  text = text.replace(/\n{3,}/g, '\n\n');
+  return text.trim();
+}
+
+module.exports = { table, statusLine, detailView, errorBlock, footer, namespacePicker, resourcePicker, htmlToMrkdwn };

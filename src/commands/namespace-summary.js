@@ -3,6 +3,16 @@ const RESOURCE_TYPES = [
   'app_firewalls', 'service_policys', 'certificates', 'healthchecks',
 ];
 
+const DISPLAY_NAMES = {
+  http_loadbalancers: 'HTTP Load Balancers',
+  tcp_loadbalancers: 'TCP Load Balancers',
+  origin_pools: 'Origin Pools',
+  app_firewalls: 'App Firewalls',
+  service_policys: 'Service Policies',
+  certificates: 'Certificates',
+  healthchecks: 'Health Checks',
+};
+
 module.exports = {
   meta: {
     name: 'namespace-summary',
@@ -54,7 +64,7 @@ module.exports = {
 
 async function renderSummary(say, formatter, namespace, counts, cached, durationMs) {
   const rows = Object.entries(counts).map(([type, count]) => ({
-    resource: type,
+    resource: DISPLAY_NAMES[type] || type,
     count: String(count),
   }));
 
