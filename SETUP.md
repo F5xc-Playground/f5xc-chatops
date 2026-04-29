@@ -62,7 +62,6 @@ For every command, set the **Request URL** to anything (Socket Mode ignores it, 
 | `/xc-api-sec` | API security status |
 | `/xc-event` | Explain a security event |
 | `/xc-quota` | Quota utilization |
-| `/xc-quota-forecast` | Resources near limits |
 | `/xc-ask` | Ask the AI Assistant |
 | `/xc-suggest` | AI LB suggestions |
 | `/xc-sites` | All sites with health |

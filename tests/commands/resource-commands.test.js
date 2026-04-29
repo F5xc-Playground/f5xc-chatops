@@ -1,7 +1,6 @@
 const listResources = require('../../src/commands/list-resources');
 const namespaceSummary = require('../../src/commands/namespace-summary');
 const quotaCheck = require('../../src/commands/quota-check');
-const quotaForecast = require('../../src/commands/quota-forecast');
 const { Cache } = require('../../src/core/cache');
 const formatter = require('../../src/core/slack-formatter');
 
@@ -88,8 +87,3 @@ describe('namespace-summary', () => {
   });
 });
 
-describe('quota-forecast', () => {
-  test('exports valid plugin contract', () => {
-    expect(quotaForecast.meta.name).toBe('quota-forecast');
-  });
-});

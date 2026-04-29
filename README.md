@@ -40,9 +40,6 @@ Every slash command also works as a natural language query — @mention the bot 
 `/xc-quota <namespace>` — Quota utilization (color-coded at 80% and 100%)
 > *"show me quota usage"* · *"how much capacity do we have left"*
 
-`/xc-quota-forecast <namespace>` — Resources approaching limits
-> *"which quotas are almost full"* · *"will we hit any limits soon"*
-
 ### Review security posture
 
 `/xc-waf <namespace> <lb>` — WAF policy and mode
