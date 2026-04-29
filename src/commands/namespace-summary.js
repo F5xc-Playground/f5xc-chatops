@@ -69,8 +69,8 @@ async function renderSummary(say, formatter, namespace, counts, cached, duration
   }));
 
   const blocks = [
-    { type: 'header', text: { type: 'plain_text', text: `📊 Namespace Summary — ${namespace}` } },
-    { type: 'section', text: { type: 'mrkdwn', text: formatter.table(['resource', 'count'], rows) } },
+    { type: 'header', text: { type: 'plain_text', text: `Namespace Summary — ${namespace}` } },
+    formatter.tableBlock(['resource', 'count'], rows),
     formatter.footer({ durationMs, cached, namespace }),
   ];
 

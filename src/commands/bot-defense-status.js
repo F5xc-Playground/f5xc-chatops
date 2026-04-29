@@ -60,7 +60,7 @@ module.exports = {
     }
 
     const blocks = [
-      ...formatter.detailView(`🤖 Bot Defense — ${name}`, fields),
+      ...formatter.detailView(`Bot Defense — ${name}`, fields),
       formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
     ];
 

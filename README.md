@@ -2,7 +2,7 @@
 
 Operational visibility into F5 Distributed Cloud — from Slack.
 
-Get answers about your tenant without opening the console. Check what's deployed, see if certs are expiring, visualize load balancer chains, investigate security events, monitor quota usage, and ask the XC AI Assistant follow-up questions — all without leaving the conversation.
+Get answers about your tenant without opening the console. Check what's deployed, see if certs are expiring, visualize load balancer chains, investigate security events, monitor quota usage, and ask the XC AI Assistant — all without leaving the conversation.
 
 ## Commands
 
@@ -37,8 +37,8 @@ Every slash command also works as a natural language query — @mention the bot 
 
 ### Check quota utilization
 
-`/xc-quota <namespace>` — Quota utilization (color-coded at 80% and 100%)
-> *"show me quota usage"* · *"how much capacity do we have left"*
+`/xc-quota` — Tenant quota utilization (color-coded at 80% and 100%)
+> *"show me quota usage"* · *"what quotas are running hot"* · *"how much capacity do we have left"*
 
 ### Review security posture
 
@@ -56,8 +56,8 @@ Every slash command also works as a natural language query — @mention the bot 
 
 ### Investigate security events
 
-`/xc-event <support-id>` — AI-powered security event explanation with follow-up buttons
-> *"explain security event abc-123"* · *"investigate security event"*
+`/xc-event <support-id>` — AI-powered security event explanation
+> *"explain security event abc-123"* · *"look up request id abc-123"* · *"investigate security event"*
 
 ### Ask the AI Assistant
 
@@ -69,8 +69,8 @@ Every slash command also works as a natural language query — @mention the bot 
 
 ### Monitor infrastructure
 
-`/xc-sites` — All sites with connectivity status
-> *"show me all sites"* · *"are all sites online"*
+`/xc-sites` — Customer Edge sites by default (`/xc-sites re` for RE, `/xc-sites all` for both)
+> *"show me all sites"* · *"are all sites online"* · *"show CE sites"*
 
 `/xc-site <name>` — Single site detail
 > *"details on site dallas-ce"* · *"describe site"*
@@ -88,7 +88,7 @@ Every slash command also works as a natural language query — @mention the bot 
 
 ## How It Works
 
-If the bot isn't sure what you mean, it suggests the closest matches as buttons. If a required detail is missing (like namespace), the bot replies with a picker showing all accessible namespaces — one tap completes the query.
+If the bot isn't sure what you mean, it suggests the closest matches as buttons. If a required detail is missing (like namespace), the bot replies with a searchable dropdown — type to filter, then select to complete the query.
 
 Results are cached for 5 minutes to avoid hammering the API. Add `--fresh` to any slash command (or say "force refresh", "no cache", "live data") to bypass the cache.
 
@@ -106,7 +106,7 @@ Results are cached for 5 minutes to avoid hammering the API. Add `--fresh` to an
 
 **Diagrams** — PNG images rendered and uploaded inline in the channel.
 
-**AI responses** — Formatted responses with follow-up query buttons. Thumbs-up/thumbs-down reactions are sent back as feedback.
+**AI responses** — Formatted answers from the XC AI Assistant. Thumbs-up/thumbs-down reactions are sent back as feedback.
 
 Every response includes a footer with fetch time, cache status, and namespace.
 

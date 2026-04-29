@@ -75,7 +75,7 @@ module.exports = {
     ];
 
     const blocks = [
-      ...formatter.detailView(`🛡️ WAF Status — ${ns}`, fields),
+      ...formatter.detailView(`WAF Status — ${ns}`, fields),
       formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
     ];
 

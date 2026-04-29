@@ -106,9 +106,9 @@ async function renderSites(say, formatter, sites, counts, mode, cached, duration
   const columns = mode === 'all' ? ['name', 'type', 'state'] : ['name', 'state'];
 
   const blocks = [
-    { type: 'header', text: { type: 'plain_text', text: `🏢 ${modeLabel} Sites` } },
+    { type: 'header', text: { type: 'plain_text', text: `${modeLabel} Sites` } },
     { type: 'section', text: { type: 'mrkdwn', text: `_${countSummary}_` } },
-    { type: 'section', text: { type: 'mrkdwn', text: formatter.table(columns, rows) } },
+    formatter.tableBlock(columns, rows),
     formatter.footer({ durationMs, cached }),
   ];
 

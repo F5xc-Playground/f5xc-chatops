@@ -50,7 +50,7 @@ module.exports = {
 
     if (spec.service_policies_from_namespace) {
       const blocks = [
-        { type: 'section', text: { type: 'mrkdwn', text: `🛡️ LB \`${name}\` uses *namespace-level service policies* from \`${ns}\`.` } },
+        { type: 'section', text: { type: 'mrkdwn', text: `LB \`${name}\` uses *namespace-level service policies* from \`${ns}\`.` } },
         formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
       ];
       cache.set(cacheKey, { blocks }, 300);
@@ -75,8 +75,8 @@ module.exports = {
     }));
 
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `🛡️ Service Policies — ${name}` } },
-      { type: 'section', text: { type: 'mrkdwn', text: formatter.table(['name', 'namespace'], rows) } },
+      { type: 'header', text: { type: 'plain_text', text: `Service Policies — ${name}` } },
+      formatter.tableBlock(['name', 'namespace'], rows),
       formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
     ];
 

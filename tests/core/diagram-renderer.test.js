@@ -31,6 +31,8 @@ describe('DiagramRenderer', () => {
     const callArgs = childProcess.execFile.mock.calls[0][1];
     expect(callArgs).toContain('-b');
     expect(callArgs).toContain('white');
+    expect(callArgs).toContain('-p');
+    expect(callArgs[callArgs.indexOf('-p') + 1]).toMatch(/puppeteer-config\.json$/);
 
     fs.unlinkSync(outputPath);
   });

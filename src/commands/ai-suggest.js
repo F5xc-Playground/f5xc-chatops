@@ -50,7 +50,7 @@ module.exports = {
     }
 
     const blocks = [];
-    blocks.push({ type: 'header', text: { type: 'plain_text', text: `💡 Suggestions — ${name}` } });
+    blocks.push({ type: 'header', text: { type: 'plain_text', text: `Suggestions — ${name}` } });
 
     const content = formatter.extractAIContent(result) || `No suggestions returned.\n_Asked:_ "${query}"`;
     blocks.push({ type: 'section', text: { type: 'mrkdwn', text: content } });

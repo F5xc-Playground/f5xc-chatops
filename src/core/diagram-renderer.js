@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 
 const MMDC_PATH = path.resolve(__dirname, '../../node_modules/.bin/mmdc');
+const PUPPETEER_CONFIG = path.resolve(__dirname, '../../puppeteer-config.json');
 const RENDER_TIMEOUT_MS = 60000;
 
 class DiagramRenderer {
@@ -18,7 +19,7 @@ class DiagramRenderer {
       await new Promise((resolve, reject) => {
         const proc = execFile(
           MMDC_PATH,
-          ['-i', inputPath, '-o', outputPath, '-b', 'white', '-s', '2'],
+          ['-i', inputPath, '-o', outputPath, '-b', 'white', '-s', '2', '-p', PUPPETEER_CONFIG],
           { timeout },
           (error, stdout, stderr) => {
             if (error) {

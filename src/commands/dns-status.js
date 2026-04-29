@@ -43,25 +43,30 @@ module.exports = {
     const gslbs = gslbData.items || [];
 
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `🌐 DNS — ${ns}` } },
+      { type: 'header', text: { type: 'plain_text', text: `DNS — ${ns}` } },
     ];
 
-    if (zones.length > 0) {
-      const rows = zones.map((z) => ({
+    const allRows = [];
+    for (const z of zones) {
+      allRows.push({
         name: z.name || z.metadata?.name || 'unknown',
-        type: z.spec?.zone_type || 'primary',
-      }));
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*DNS Zones (${zones.length})*\n` + formatter.table(['name', 'type'], rows) } });
-    } else {
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: 'No DNS zones configured.' } });
+        kind: z.spec?.zone_type || 'primary',
+        category: 'Zone',
+      });
+    }
+    for (const g of gslbs) {
+      allRows.push({
+        name: g.name || g.metadata?.name || 'unknown',
+        kind: '-',
+        category: 'GSLB',
+      });
     }
 
-    if (gslbs.length > 0) {
-      blocks.push({ type: 'divider' });
-      const rows = gslbs.map((g) => ({
-        name: g.name || g.metadata?.name || 'unknown',
-      }));
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*DNS Load Balancers (${gslbs.length})*\n` + formatter.table(['name'], rows) } });
+    if (allRows.length > 0) {
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `_${zones.length} zones, ${gslbs.length} load balancers_` } });
+      blocks.push(formatter.tableBlock(['name', 'category', 'kind'], allRows));
+    } else {
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: 'No DNS zones or load balancers configured.' } });
     }
 
     blocks.push(formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }));

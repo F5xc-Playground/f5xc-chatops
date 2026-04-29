@@ -82,7 +82,7 @@ async function renderLb(say, formatter, ns, name, lb, cached, durationMs) {
   }
 
   const blocks = [
-    ...formatter.detailView(`🔷 ${lb.metadata?.name || name}`, fields),
+    ...formatter.detailView(`${lb.metadata?.name || name}`, fields),
     formatter.footer({ durationMs, cached, namespace: ns }),
   ];
 

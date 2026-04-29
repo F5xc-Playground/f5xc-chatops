@@ -50,7 +50,7 @@ module.exports = {
 
     const scope = ns || 'all namespaces';
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `🔔 Active Alerts — ${scope}` } },
+      { type: 'header', text: { type: 'plain_text', text: `Active Alerts — ${scope}` } },
     ];
 
     if (alerts.length === 0) {

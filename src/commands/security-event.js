@@ -56,7 +56,7 @@ module.exports = {
     }
 
     const blocks = [];
-    blocks.push({ type: 'header', text: { type: 'plain_text', text: `🔒 Security Event: ${supportId.trim()}` } });
+    blocks.push({ type: 'header', text: { type: 'plain_text', text: `Security Event: ${supportId.trim()}` } });
 
     const content = formatter.extractAIContent(result);
     if (content) {

@@ -61,10 +61,10 @@ For every command, set the **Request URL** to anything (Socket Mode ignores it, 
 | `/xc-bot` | Bot defense status |
 | `/xc-api-sec` | API security status |
 | `/xc-event` | Explain a security event |
-| `/xc-quota` | Quota utilization |
+| `/xc-quota` | Tenant quota utilization |
 | `/xc-ask` | Ask the AI Assistant |
 | `/xc-suggest` | AI LB suggestions |
-| `/xc-sites` | All sites with health |
+| `/xc-sites` | CE sites (use `re` or `all` for more) |
 | `/xc-site` | Single site detail |
 | `/xc-dns` | DNS zones |
 | `/xc-alerts` | Active firing alerts |
@@ -105,7 +105,7 @@ This lets users DM the bot directly with natural language queries.
 7. Click **Generate**
 8. Copy the token — this is your `F5XC_API_TOKEN`
 
-**Recommended:** Use a service account with read-only access. The bot only needs `GET` requests to read resources. The AI Assistant features (`/xc-ask`, `/xc-event`, `/xc-suggest`) additionally use `PUT` to send queries, but never modify tenant configuration.
+**Recommended:** Use a service account with read-only access. The bot only needs `GET` requests to read resources. The AI Assistant features (`/xc-ask`, `/xc-event`, `/xc-suggest`) additionally use `POST` to send queries, but never modify tenant configuration.
 
 Your `F5XC_API_URL` is your tenant console URL, e.g. `https://acme.console.ves.volterra.io`.
 

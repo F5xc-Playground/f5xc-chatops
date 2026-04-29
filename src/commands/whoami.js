@@ -27,15 +27,12 @@ module.exports = {
       { label: 'Namespaces', value: String(namespaces.length) },
     ];
 
-    const blocks = formatter.detailView('🤖 Bot Identity', fields);
+    const blocks = formatter.detailView('Bot Identity', fields);
 
     if (namespaces.length > 0) {
       const rows = namespaces.map((ns) => ({ namespace: ns }));
       blocks.push({ type: 'divider' });
-      blocks.push({
-        type: 'section',
-        text: { type: 'mrkdwn', text: formatter.table(['namespace'], rows) },
-      });
+      blocks.push(formatter.tableBlock(['namespace'], rows));
     }
 
     await say({ blocks });

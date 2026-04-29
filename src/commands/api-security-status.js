@@ -55,7 +55,7 @@ module.exports = {
     }
 
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `🔐 API Security — ${ns}` } },
+      { type: 'header', text: { type: 'plain_text', text: `API Security — ${ns}` } },
       { type: 'section', text: { type: 'mrkdwn', text: lines.join('\n') } },
       formatter.footer({ durationMs: Date.now() - startTime, cached: false, namespace: ns }),
     ];

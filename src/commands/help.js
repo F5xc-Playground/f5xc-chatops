@@ -34,7 +34,7 @@ module.exports = {
           value: cmd.intents.map((i) => `"${i.utterance}"`).join('\n'),
         });
       }
-      await say({ blocks: formatter.detailView(`📖 ${cmd.meta.name}`, fields) });
+      await say({ blocks: formatter.detailView(cmd.meta.name, fields) });
       return;
     }
 
@@ -46,7 +46,7 @@ module.exports = {
     }
 
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: '📖 Available Commands' } },
+      { type: 'header', text: { type: 'plain_text', text: 'Available Commands' } },
     ];
 
     for (const [category, cmds] of Object.entries(grouped)) {

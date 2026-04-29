@@ -73,12 +73,17 @@ function namespacePicker(intentName, namespaces) {
     {
       type: 'section',
       text: { type: 'mrkdwn', text: 'Which namespace?' },
-      accessory: {
-        type: 'external_select',
-        placeholder: { type: 'plain_text', text: 'Type to search namespaces...' },
-        action_id: `ns_select_${intentName}`,
-        min_query_length: 0,
-      },
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'external_select',
+          placeholder: { type: 'plain_text', text: 'Type to search namespaces...' },
+          action_id: `ns_select_${intentName}`,
+          min_query_length: 0,
+        },
+      ],
     },
   ];
 }
@@ -172,4 +177,28 @@ function _collectText(obj) {
   return parts.join('\n\n');
 }
 
-module.exports = { table, statusLine, detailView, errorBlock, footer, namespacePicker, resourcePicker, htmlToMrkdwn, extractAIContent };
+const TABLE_MAX_ROWS = 100;
+
+function tableBlock(columns, rows) {
+  const headerRow = columns.map((col) => ({ type: 'raw_text', text: String(col) }));
+  const dataRows = rows.slice(0, TABLE_MAX_ROWS).map((row) =>
+    columns.map((col) => ({ type: 'raw_text', text: String(row[col] ?? '') }))
+  );
+  return {
+    type: 'table',
+    rows: [headerRow, ...dataRows],
+  };
+}
+
+function csvString(columns, rows) {
+  const header = columns.join(',');
+  const body = rows.map((row) =>
+    columns.map((col) => {
+      const val = String(row[col] ?? '');
+      return val.includes(',') || val.includes('"') ? `"${val.replace(/"/g, '""')}"` : val;
+    }).join(',')
+  ).join('\n');
+  return header + '\n' + body;
+}
+
+module.exports = { table, tableBlock, csvString, TABLE_MAX_ROWS, statusLine, detailView, errorBlock, footer, namespacePicker, resourcePicker, htmlToMrkdwn, extractAIContent };

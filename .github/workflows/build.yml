@@ -37,14 +37,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get package version
+        id: pkg
+        run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+
       - uses: docker/metadata-action@v5
         id: meta
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=semver,pattern={{version}},value=${{ steps.pkg.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.pkg.outputs.version }}
             type=sha
-            type=ref,event=branch
-            type=ref,event=pr
 
       - uses: docker/build-push-action@v6
         with:

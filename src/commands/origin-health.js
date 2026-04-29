@@ -75,7 +75,7 @@ async function renderOrigins(say, formatter, name, ns, servers, cached, duration
   });
 
   const blocks = [
-    { type: 'header', text: { type: 'plain_text', text: `🏥 Origin Pool: ${name} — ${ns}` } },
+    { type: 'header', text: { type: 'plain_text', text: `Origin Pool: ${name} — ${ns}` } },
     { type: 'section', text: { type: 'mrkdwn', text: `_Configured origins (${servers.length}):_\n` + lines.join('\n') } },
     formatter.footer({ durationMs, cached, namespace: ns }),
   ];

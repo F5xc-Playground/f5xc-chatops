@@ -39,7 +39,7 @@ module.exports = {
 
     const content = formatter.extractAIContent(result);
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: '🤖 AI Assistant' } },
+      { type: 'header', text: { type: 'plain_text', text: 'AI Assistant' } },
     ];
 
     if (content) {

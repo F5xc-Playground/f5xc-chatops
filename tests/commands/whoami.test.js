@@ -78,11 +78,11 @@ describe('whoami handler — with cachedWhoami', () => {
     const tenant = makeTenant({ namespaces: ['production', 'staging'] });
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];
-    const tableSections = blocks.filter((b) => b.type === 'section' && b.text && b.text.text.includes('```'));
-    expect(tableSections.length).toBeGreaterThan(0);
-    const tableText = tableSections[0].text.text;
-    expect(tableText).toContain('production');
-    expect(tableText).toContain('staging');
+    const tableBlock = blocks.find((b) => b.type === 'table');
+    expect(tableBlock).toBeDefined();
+    const cellTexts = tableBlock.rows.flat().map((c) => c.text);
+    expect(cellTexts).toContain('production');
+    expect(cellTexts).toContain('staging');
   });
 
   test('no table appended when namespace list is empty', async () => {

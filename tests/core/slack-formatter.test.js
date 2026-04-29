@@ -75,11 +75,49 @@ describe('slack-formatter', () => {
     });
   });
 
+  describe('tableBlock', () => {
+    test('returns native Slack table block with header row', () => {
+      const rows = [
+        { name: 'lb-1', status: 'online' },
+        { name: 'lb-2', status: 'offline' },
+      ];
+      const block = fmt.tableBlock(['name', 'status'], rows);
+      expect(block.type).toBe('table');
+      expect(block.rows).toHaveLength(3);
+      expect(block.rows[0][0]).toEqual({ type: 'raw_text', text: 'name' });
+      expect(block.rows[1][0]).toEqual({ type: 'raw_text', text: 'lb-1' });
+      expect(block.rows[2][1]).toEqual({ type: 'raw_text', text: 'offline' });
+    });
+
+    test('caps at TABLE_MAX_ROWS', () => {
+      const rows = Array.from({ length: 150 }, (_, i) => ({ n: `r${i}` }));
+      const block = fmt.tableBlock(['n'], rows);
+      expect(block.rows).toHaveLength(101);
+    });
+  });
+
+  describe('csvString', () => {
+    test('generates CSV with header and data', () => {
+      const rows = [
+        { name: 'lb-1', ns: 'prod' },
+        { name: 'lb-2', ns: 'staging' },
+      ];
+      const csv = fmt.csvString(['name', 'ns'], rows);
+      expect(csv).toBe('name,ns\nlb-1,prod\nlb-2,staging');
+    });
+
+    test('quotes values containing commas', () => {
+      const rows = [{ name: 'a, b', ns: 'prod' }];
+      const csv = fmt.csvString(['name', 'ns'], rows);
+      expect(csv).toContain('"a, b"');
+    });
+  });
+
   describe('namespacePicker', () => {
-    test('renders external_select with intent in action_id', () => {
+    test('renders external_select in actions block', () => {
       const blocks = fmt.namespacePicker('quota.check', ['system', 'prod', 'staging']);
-      const section = blocks.find((b) => b.type === 'section');
-      const select = section.accessory;
+      const actions = blocks.find((b) => b.type === 'actions');
+      const select = actions.elements[0];
       expect(select.type).toBe('external_select');
       expect(select.action_id).toBe('ns_select_quota.check');
       expect(select.min_query_length).toBe(0);

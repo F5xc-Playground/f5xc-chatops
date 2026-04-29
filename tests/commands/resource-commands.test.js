@@ -50,14 +50,49 @@ describe('list-resources', () => {
     expect(text).toContain('lb1.example.com');
   });
 
-  test('prompts for namespace if missing', async () => {
+  test('uses inventory endpoint for LBs without namespace', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn(),
+        post: jest.fn().mockResolvedValue({
+          http_loadbalancers: {
+            httplb_results: [
+              { name: 'lb1', namespace: 'prod', domains: ['lb1.example.com'], waf_enforcement_mode: 'Blocking' },
+              { name: 'lb2', namespace: 'staging', domains: ['lb2.example.com'], waf_enforcement_mode: '' },
+            ],
+          },
+        }),
+      },
+    };
+    await listResources.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: null, resourceType: 'http_loadbalancer', raw: '' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('lb1');
+    expect(text).toContain('lb2');
+    expect(text).toContain('prod');
+    expect(text).toContain('staging');
+    expect(text).toContain('all namespaces');
+    expect(tenant.client.post).toHaveBeenCalledWith(
+      '/api/config/namespaces/system/all_application_inventory',
+      { http_load_balancer_filter: {}, tcp_load_balancer_filter: {} }
+    );
+  });
+
+  test('prompts for namespace for non-inventory types', async () => {
     const messages = [];
     const tenant = mockTenant({});
     await listResources.handler({
       say: (msg) => messages.push(msg),
       tenant,
       cache: new Cache(),
-      args: { namespace: null, resourceType: 'http_loadbalancer', raw: '' },
+      args: { namespace: null, resourceType: 'app_firewall', raw: '' },
       formatter,
     });
     const text = JSON.stringify(messages[0]);
@@ -71,25 +106,77 @@ describe('quota-check', () => {
     expect(quotaCheck.meta.slashCommand).toBe('/xc-quota');
   });
 
-  test('displays color-coded quota usage', async () => {
-    const messages = [];
-    const tenant = mockTenant({
-      items: [
-        { kind: 'http_loadbalancer', current_count: 12, max_allowed: 25 },
-        { kind: 'origin_pool', current_count: 48, max_allowed: 50 },
-        { kind: 'service_policy', current_count: 15, max_allowed: 15 },
-      ],
+  function quotaTenant() {
+    return mockTenant({
+      quota_usage: {
+        'HTTP Load Balancer': { limit: { maximum: 25 }, usage: { current: 12 } },
+        'Origin Pool': { limit: { maximum: 50 }, usage: { current: 48 } },
+        'Service Policy': { limit: { maximum: 15 }, usage: { current: 15 } },
+        'DNS Zone': { limit: { maximum: 100 }, usage: { current: 5 } },
+        'API Inventory': { limit: { maximum: -1 }, usage: { current: 29 } },
+      },
     });
+  }
+
+  test('default shows warning+ only (50%+)', async () => {
+    const messages = [];
     await quotaCheck.handler({
       say: (msg) => messages.push(msg),
-      tenant,
+      tenant: quotaTenant(),
       cache: new Cache(),
-      args: { namespace: 'prod' },
+      args: { raw: '' },
       formatter,
     });
-    expect(messages.length).toBe(1);
     const text = JSON.stringify(messages[0]);
-    expect(text).toContain('http_loadbalancer');
+    expect(text).toContain('Origin Pool');
+    expect(text).toContain('Service Policy');
+    expect(text).not.toContain('HTTP Load Balancer');
+    expect(text).not.toContain('DNS Zone');
+    expect(text).not.toContain('API Inventory');
+  });
+
+  test('"all" shows quotas and uncapped usage', async () => {
+    const messages = [];
+    await quotaCheck.handler({
+      say: (msg) => messages.push(msg),
+      tenant: quotaTenant(),
+      cache: new Cache(),
+      args: { raw: 'all' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('DNS Zone');
+    expect(text).toContain('API Inventory');
+    expect(text).toContain('no cap');
+  });
+
+  test('"critical" filters to 80%+', async () => {
+    const messages = [];
+    await quotaCheck.handler({
+      say: (msg) => messages.push(msg),
+      tenant: quotaTenant(),
+      cache: new Cache(),
+      args: { raw: 'critical' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Origin Pool');
+    expect(text).toContain('Service Policy');
+    expect(text).not.toContain('HTTP Load Balancer');
+  });
+
+  test('search filters by resource name', async () => {
+    const messages = [];
+    await quotaCheck.handler({
+      say: (msg) => messages.push(msg),
+      tenant: quotaTenant(),
+      cache: new Cache(),
+      args: { raw: 'load balancer' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('HTTP Load Balancer');
+    expect(text).not.toContain('Origin Pool');
   });
 });
 

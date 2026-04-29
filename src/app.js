@@ -180,7 +180,7 @@ async function start() {
               type: 'button',
               text: { type: 'plain_text', text: s.intent.replace('.', ': ') },
               action_id: `suggest_${s.intent}`,
-              value: s.intent,
+              value: JSON.stringify({ intent: s.intent, raw: text, entities: result.entities }),
             })),
           },
         ];
@@ -259,13 +259,27 @@ async function start() {
   // NLP suggestion button handler
   app.action(/^suggest_/, async ({ action, ack, say, client }) => {
     await ack();
-    const intent = action.value;
+    let intent, raw = '', entities = {};
+    try {
+      const parsed = JSON.parse(action.value);
+      intent = parsed.intent;
+      raw = parsed.raw || '';
+      entities = parsed.entities || {};
+    } catch {
+      intent = action.value;
+    }
     const mod = intentMap[intent];
     if (!mod) {
       await say({ blocks: formatter.errorBlock(`No handler found for "${intent}".`) });
       return;
     }
-    const args = { namespace: null, fresh: false, raw: '' };
+    const args = {
+      namespace: entities.namespace || null,
+      resourceName: entities.resourceName || null,
+      resourceType: entities.resourceType || null,
+      fresh: false,
+      raw,
+    };
     try {
       await mod.handler({ ...makeHandlerContext(say, client), args });
     } catch (err) {

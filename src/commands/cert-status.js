@@ -75,7 +75,7 @@ async function renderCerts(say, formatter, ns, lbs, cached, durationMs) {
   }
 
   const blocks = [
-    { type: 'header', text: { type: 'plain_text', text: `🔒 Certificate Status — ${ns}` } },
+    { type: 'header', text: { type: 'plain_text', text: `Certificate Status — ${ns}` } },
     { type: 'section', text: { type: 'mrkdwn', text: certLines.join('\n') } },
     formatter.footer({ durationMs, cached, namespace: ns }),
   ];

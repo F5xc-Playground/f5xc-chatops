@@ -66,7 +66,7 @@ module.exports = {
     }
 
     const blocks = [
-      ...formatter.detailView(`🏢 Site: ${name}`, fields),
+      ...formatter.detailView(`Site: ${name}`, fields),
       formatter.footer({ durationMs: Date.now() - startTime, cached: false }),
     ];
 
