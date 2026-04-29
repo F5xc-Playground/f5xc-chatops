@@ -169,8 +169,8 @@ module.exports = {
 
   handler: async ({ say, client, tenant, cache, args, formatter, diagramRenderer }) => {
     if (!args.namespace) {
-      const nsRoleMap = tenant.cachedWhoami?.namespace_access?.namespace_role_map || {};
-      await say({ blocks: formatter.namespacePicker('diagram.lb', Object.keys(nsRoleMap)) });
+      
+      await say({ blocks: formatter.namespacePicker('diagram.lb', tenant.namespaces || []) });
       return;
     }
     if (!args.resourceName) {

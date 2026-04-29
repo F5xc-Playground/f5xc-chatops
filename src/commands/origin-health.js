@@ -19,8 +19,8 @@ module.exports = {
 
   handler: async ({ say, tenant, cache, args, formatter }) => {
     if (!args.namespace) {
-      const nsRoleMap = tenant.cachedWhoami?.namespace_access?.namespace_role_map || {};
-      await say({ blocks: formatter.namespacePicker('origin.health', Object.keys(nsRoleMap)) });
+      
+      await say({ blocks: formatter.namespacePicker('origin.health', tenant.namespaces || []) });
       return;
     }
     if (!args.resourceName) {

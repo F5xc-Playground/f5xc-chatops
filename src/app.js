@@ -65,7 +65,15 @@ async function start() {
     tenant.cachedWhoami = whoami;
     cache.set(`${tenant.name}:whoami`, whoami, config.cacheStaticTTL);
     const nsRoles = whoami.namespace_access?.namespace_role_map || {};
-    const namespaces = Object.keys(nsRoles).filter((ns) => ns !== '*');
+    let namespaces = Object.keys(nsRoles).filter((ns) => ns !== '*');
+
+    if (nsRoles['*']) {
+      log('info', 'Wildcard namespace access — fetching full namespace list...');
+      const nsData = await tenant.client.get('/api/web/namespaces');
+      namespaces = (nsData.items || []).map((ns) => ns.name || ns.metadata?.name).filter(Boolean);
+    }
+
+    tenant.namespaces = namespaces;
     cache.set(`${tenant.name}:namespaces`, namespaces, config.cacheStaticTTL);
     log('info', 'whoami complete', {
       tenant: tenant.name,

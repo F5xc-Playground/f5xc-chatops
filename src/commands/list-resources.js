@@ -38,8 +38,8 @@ module.exports = {
 
   handler: async ({ say, tenant, cache, args, formatter }) => {
     if (!args.namespace) {
-      const nsRoleMap = tenant.cachedWhoami?.namespace_access?.namespace_role_map || {};
-      await say({ blocks: formatter.namespacePicker('list.resources', Object.keys(nsRoleMap)) });
+      
+      await say({ blocks: formatter.namespacePicker('list.resources', tenant.namespaces || []) });
       return;
     }
 

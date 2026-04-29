@@ -17,8 +17,8 @@ module.exports = {
 
   handler: async ({ say, aiAssistant, tenant, args, formatter }) => {
     if (!args.namespace) {
-      const nsRoleMap = tenant.cachedWhoami?.namespace_access?.namespace_role_map || {};
-      await say({ blocks: formatter.namespacePicker('ai.suggest', Object.keys(nsRoleMap)) });
+      
+      await say({ blocks: formatter.namespacePicker('ai.suggest', tenant.namespaces || []) });
       return;
     }
     if (!args.resourceName) {

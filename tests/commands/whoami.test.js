@@ -37,14 +37,12 @@ describe('whoami handler — no cachedWhoami', () => {
 });
 
 describe('whoami handler — with cachedWhoami', () => {
-  function makeTenant({ namespaceRoles = {} } = {}) {
+  function makeTenant({ namespaces = [] } = {}) {
     return {
       name: 'acme',
+      namespaces,
       cachedWhoami: {
         email: 'bot@acme.com',
-        namespace_access: {
-          namespace_role_map: namespaceRoles,
-        },
       },
     };
   }
@@ -70,12 +68,7 @@ describe('whoami handler — with cachedWhoami', () => {
 
   test('includes namespace count in detail fields', async () => {
     const say = jest.fn();
-    const tenant = makeTenant({
-      namespaceRoles: {
-        production: { roles: ['ves-io-admin'] },
-        staging: { roles: ['ves-io-monitor'] },
-      },
-    });
+    const tenant = makeTenant({ namespaces: ['production', 'staging'] });
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];
     const fieldTexts = blocks
@@ -84,14 +77,9 @@ describe('whoami handler — with cachedWhoami', () => {
     expect(fieldTexts.some((t) => t.includes('2'))).toBe(true);
   });
 
-  test('appends namespace/role table when namespaces exist', async () => {
+  test('appends namespace table when namespaces exist', async () => {
     const say = jest.fn();
-    const tenant = makeTenant({
-      namespaceRoles: {
-        production: { roles: ['ves-io-admin', 'ves-io-monitor'] },
-        staging: { roles: ['ves-io-monitor'] },
-      },
-    });
+    const tenant = makeTenant({ namespaces: ['production', 'staging'] });
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];
     const tableSections = blocks.filter((b) => b.type === 'section' && b.text && b.text.text.includes('```'));
@@ -99,12 +87,11 @@ describe('whoami handler — with cachedWhoami', () => {
     const tableText = tableSections[0].text.text;
     expect(tableText).toContain('production');
     expect(tableText).toContain('staging');
-    expect(tableText).toContain('ves-io-admin');
   });
 
-  test('no table appended when namespace map is empty', async () => {
+  test('no table appended when namespace list is empty', async () => {
     const say = jest.fn();
-    const tenant = makeTenant({ namespaceRoles: {} });
+    const tenant = makeTenant({ namespaces: [] });
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];
     const tableSections = blocks.filter((b) => b.type === 'section' && b.text && b.text.text.includes('```'));
@@ -115,10 +102,8 @@ describe('whoami handler — with cachedWhoami', () => {
     const say = jest.fn();
     const tenant = {
       name: 'acme',
-      cachedWhoami: {
-        // no email field
-        namespace_access: { namespace_role_map: {} },
-      },
+      namespaces: [],
+      cachedWhoami: {},
     };
     await whoami.handler({ say, tenant, formatter });
     const { blocks } = say.mock.calls[0][0];

@@ -20,25 +20,21 @@ module.exports = {
       return;
     }
 
-    const nsRoleMap = whoami.namespace_access?.namespace_role_map || {};
+    const namespaces = tenant.namespaces || [];
     const fields = [
       { label: 'Tenant', value: tenant.name },
       { label: 'Email', value: whoami.email || 'N/A' },
-      { label: 'Namespaces', value: String(Object.keys(nsRoleMap).length) },
+      { label: 'Namespaces', value: String(namespaces.length) },
     ];
 
     const blocks = formatter.detailView('🤖 Bot Identity', fields);
 
-    const nsEntries = Object.entries(nsRoleMap);
-    if (nsEntries.length > 0) {
-      const rows = nsEntries.map(([ns, info]) => ({
-        namespace: ns,
-        roles: (info.roles || []).join(', '),
-      }));
+    if (namespaces.length > 0) {
+      const rows = namespaces.map((ns) => ({ namespace: ns }));
       blocks.push({ type: 'divider' });
       blocks.push({
         type: 'section',
-        text: { type: 'mrkdwn', text: formatter.table(['namespace', 'roles'], rows) },
+        text: { type: 'mrkdwn', text: formatter.table(['namespace'], rows) },
       });
     }
 
