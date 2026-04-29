@@ -10,7 +10,6 @@ const RESOURCE_PATHS = {
   rate_limiter: 'rate_limiters',
   dns_zone: 'dns_zones',
   dns_load_balancer: 'dns_load_balancers',
-  alert_policy: 'alert_policys',
   route: 'routes',
   virtual_network: 'virtual_networks',
   network_policy: 'network_policys',

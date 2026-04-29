@@ -112,7 +112,6 @@ async function start() {
     { name: 'dns_zone', synonyms: ['DNS zone', 'dns zones', 'zone'] },
     { name: 'dns_load_balancer', synonyms: ['DNS load balancer', 'GSLB', 'dns lb'] },
     { name: 'rate_limiter', synonyms: ['rate limiter', 'rate limit', 'rate limiting'] },
-    { name: 'alert_policy', synonyms: ['alert', 'alerts', 'alert policy'] },
   ]);
   await nlp.train();
   log('info', 'NLP trained', { intents: allIntents.length });
