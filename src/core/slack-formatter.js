@@ -81,6 +81,7 @@ function footer({ durationMs, cached, namespace }) {
 }
 
 function namespacePicker(intentName, namespaces) {
+  const real = namespaces.filter((ns) => ns !== '*');
   return [
     {
       type: 'section',
@@ -88,7 +89,7 @@ function namespacePicker(intentName, namespaces) {
     },
     {
       type: 'actions',
-      elements: namespaces.slice(0, 20).map((ns) => ({
+      elements: real.slice(0, 20).map((ns) => ({
         type: 'button',
         text: { type: 'plain_text', text: ns },
         action_id: `ns_pick_${ns}`,

@@ -65,7 +65,7 @@ async function start() {
     tenant.cachedWhoami = whoami;
     cache.set(`${tenant.name}:whoami`, whoami, config.cacheStaticTTL);
     const nsRoles = whoami.namespace_access?.namespace_role_map || {};
-    const namespaces = Object.keys(nsRoles);
+    const namespaces = Object.keys(nsRoles).filter((ns) => ns !== '*');
     cache.set(`${tenant.name}:namespaces`, namespaces, config.cacheStaticTTL);
     log('info', 'whoami complete', {
       tenant: tenant.name,
