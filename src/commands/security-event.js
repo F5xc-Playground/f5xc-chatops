@@ -12,12 +12,29 @@ module.exports = {
     { utterance: 'investigate security event', intent: 'security.event' },
     { utterance: 'look up this security event', intent: 'security.event' },
     { utterance: 'tell me about this event', intent: 'security.event' },
+    { utterance: 'tell me about request id', intent: 'security.event' },
+    { utterance: 'look up request id', intent: 'security.event' },
+    { utterance: 'what is this request id', intent: 'security.event' },
+    { utterance: 'explain this security id', intent: 'security.event' },
+    { utterance: 'look up security event id', intent: 'security.event' },
+    { utterance: 'tell me about this security id', intent: 'security.event' },
+    { utterance: 'investigate request', intent: 'security.event' },
   ],
 
   entities: [],
 
   handler: async ({ say, aiAssistant, args, formatter }) => {
-    const supportId = args.resourceName || args.raw || '';
+    let supportId = args.resourceName || '';
+    if (!supportId && args.raw) {
+      const raw = args.raw;
+      const uuidMatch = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      if (uuidMatch) {
+        supportId = uuidMatch[0];
+      } else {
+        const idMatch = raw.match(/\b([0-9a-f][\w-]{6,})\b/i);
+        supportId = idMatch ? idMatch[1] : raw.trim();
+      }
+    }
     if (!supportId.trim()) {
       await say({ blocks: formatter.errorBlock('Please provide a support ID. Example: `/xc-event abc-123`') });
       return;
