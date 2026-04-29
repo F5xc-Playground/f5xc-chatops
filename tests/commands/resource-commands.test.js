@@ -24,7 +24,18 @@ describe('list-resources', () => {
 
   test('lists resources by type in namespace', async () => {
     const messages = [];
-    const tenant = mockTenant({ items: [{ name: 'lb1' }, { name: 'lb2' }] });
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockImplementation((path) => {
+          if (path.endsWith('/http_loadbalancers')) {
+            return Promise.resolve({ items: [{ name: 'lb1' }, { name: 'lb2' }] });
+          }
+          const name = path.split('/').pop();
+          return Promise.resolve({ metadata: { name }, spec: { domains: [`${name}.example.com`] } });
+        }),
+      },
+    };
     await listResources.handler({
       say: (msg) => messages.push(msg),
       tenant,
@@ -36,6 +47,7 @@ describe('list-resources', () => {
     const text = JSON.stringify(messages[0]);
     expect(text).toContain('lb1');
     expect(text).toContain('lb2');
+    expect(text).toContain('lb1.example.com');
   });
 
   test('prompts for namespace if missing', async () => {

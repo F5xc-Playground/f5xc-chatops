@@ -73,7 +73,18 @@ module.exports = {
     const startTime = Date.now();
     const prefix = resourceType.startsWith('dns_') ? 'dns' : 'config';
     const data = await tenant.client.get(`/api/${prefix}/namespaces/${args.namespace}/${apiPath}`);
-    const items = data.items || [];
+    let items = data.items || [];
+
+    if (resourceType.includes('loadbalancer') && items.length > 0) {
+      const detailed = await Promise.allSettled(
+        items.slice(0, MAX_DISPLAY_ITEMS).map((item) => {
+          const name = item.name || item.metadata?.name;
+          return name ? tenant.client.get(`/api/${prefix}/namespaces/${args.namespace}/${apiPath}/${name}`) : Promise.resolve(item);
+        })
+      );
+      items = detailed.map((r, i) => (r.status === 'fulfilled' ? r.value : items[i]));
+    }
+
     cache.set(cacheKey, items, 300);
 
     await renderList(say, formatter, resourceType, args.namespace, items, false, Date.now() - startTime);
