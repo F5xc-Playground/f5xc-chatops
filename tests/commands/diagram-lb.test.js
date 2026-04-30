@@ -26,7 +26,7 @@ describe('diagram-lb', () => {
     expect(diagramLb.intents.length).toBeGreaterThanOrEqual(3);
   });
 
-  test('buildMermaid generates inline traffic-flow diagram', () => {
+  test('buildMermaid generates inline traffic-flow diagram with resource names', () => {
     const lb = {
       metadata: { name: 'test-lb' },
       spec: {
@@ -34,7 +34,10 @@ describe('diagram-lb', () => {
         advertise_on_public_default_vip: {},
         app_firewall: { name: 'prod-waf' },
         active_service_policies: { policies: [{ name: 'block-bots' }] },
-        bot_defense: { regional_endpoint: 'US' },
+        bot_defense: { policy: { name: 'bd-standard' }, regional_endpoint: 'US' },
+        client_side_defense: { policy: { name: 'csd-prod' } },
+        api_protection_rules: { api_groups_rules: [{ metadata: { name: 'api-rule-1' } }] },
+        enable_api_discovery: {},
         default_route_pools: [
           { pool: { name: 'pool-1', namespace: 'prod' } },
         ],
@@ -54,10 +57,18 @@ describe('diagram-lb', () => {
     expect(mermaid).toContain('graph TD');
     expect(mermaid).toContain('test-lb');
     expect(mermaid).toContain('Public HTTP LB');
+    expect(mermaid).toContain('Domains');
     expect(mermaid).toContain('app#46;example#46;com');
     expect(mermaid).toContain('Service Policies');
     expect(mermaid).toContain('block-bots');
     expect(mermaid).toContain('Bot Defense');
+    expect(mermaid).toContain('bd-standard');
+    expect(mermaid).toContain('region: US');
+    expect(mermaid).toContain('API Protection');
+    expect(mermaid).toContain('api-rule-1');
+    expect(mermaid).toContain('API Discovery');
+    expect(mermaid).toContain('Client-Side Defense');
+    expect(mermaid).toContain('csd-prod');
     expect(mermaid).toContain('prod-waf');
     expect(mermaid).toContain(':::waf');
     expect(mermaid).toContain('pool-1');
@@ -65,11 +76,8 @@ describe('diagram-lb', () => {
     expect(mermaid).toContain('public');
     expect(mermaid).toContain('site-1');
 
-    // Verify inline chain: each security node connects to the next, not as a side branch
     const nodeLines = mermaid.split('\n').filter((l) => l.includes(' --> '));
-    const chain = nodeLines.map((l) => l.trim());
-    // User → LB → Domain → Service Policies → Bot Defense → WAF → Routes
-    expect(chain.length).toBeGreaterThanOrEqual(7);
+    expect(nodeLines.length).toBeGreaterThanOrEqual(10);
     expect(mermaid).not.toContain('subgraph');
   });
 

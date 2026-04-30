@@ -16,8 +16,8 @@ function buildMermaid(lb, pools) {
 
   const userId = id();
   const lbId = id();
-  lines.push(`  ${userId}(["\xF0\x9F\x91\xA4 User"])`);
-  lines.push(`  ${lbId}["${escapeLabel(name)}<br/>${lbType} HTTP LB"]`);
+  lines.push(`  ${userId}(["User"]):::user`);
+  lines.push(`  ${lbId}["${escapeLabel(name)}<br/>${lbType} HTTP LB"]:::lb`);
   lines.push(`  ${userId} --> ${lbId}`);
 
   let lastId = lbId;
@@ -27,7 +27,7 @@ function buildMermaid(lb, pools) {
   if (domains.length > 0) {
     const domId = id();
     const domLabel = domains.map((d) => escapeLabel(d)).join('<br/>');
-    lines.push(`  ${domId}["${domLabel}"]`);
+    lines.push(`  ${domId}["Domains<br/>${domLabel}"]:::domain`);
     lines.push(`  ${lastId} --> ${domId}`);
     lastId = domId;
   }
@@ -48,26 +48,66 @@ function buildMermaid(lb, pools) {
     lastId = spId;
   }
 
-  // Bot Defense — inline
+  // Bot Defense — inline with policy name
   if (spec.bot_defense) {
     const bdId = id();
-    lines.push(`  ${bdId}["Bot Defense"]:::security`);
+    const bdParts = ['Bot Defense'];
+    if (spec.bot_defense.policy?.name) bdParts.push(escapeLabel(spec.bot_defense.policy.name));
+    if (spec.bot_defense.regional_endpoint) bdParts.push(`region: ${spec.bot_defense.regional_endpoint}`);
+    lines.push(`  ${bdId}["${bdParts.join('<br/>')}"]:::security`);
     lines.push(`  ${lastId} --> ${bdId}`);
     lastId = bdId;
   }
 
-  // Additional security features — inline
-  const extraSec = [];
-  if (spec.enable_malicious_user_detection) extraSec.push('Malicious User Detection');
-  if (spec.api_protection_rules) extraSec.push('API Protection');
-  if (spec.enable_api_discovery) extraSec.push('API Discovery');
-  if (spec.data_guard_rules) extraSec.push('Data Guard');
-  if (spec.client_side_defense) extraSec.push('Client-Side Defense');
-  if (extraSec.length > 0) {
-    const esId = id();
-    lines.push(`  ${esId}["${extraSec.join('<br/>')}"]:::security`);
-    lines.push(`  ${lastId} --> ${esId}`);
-    lastId = esId;
+  // Malicious User Detection
+  if (spec.enable_malicious_user_detection) {
+    const mudId = id();
+    lines.push(`  ${mudId}["Malicious User Detection"]:::security`);
+    lines.push(`  ${lastId} --> ${mudId}`);
+    lastId = mudId;
+  }
+
+  // API Protection — with rule/group names
+  if (spec.api_protection_rules) {
+    const apId = id();
+    const apParts = ['API Protection'];
+    const groups = spec.api_protection_rules.api_groups_rules || [];
+    for (const g of groups) {
+      if (g.metadata?.name) apParts.push(escapeLabel(g.metadata.name));
+    }
+    const apiGroup = spec.api_protection_rules.api_group || spec.api_protection_rules.api_specification;
+    if (apiGroup?.name) apParts.push(escapeLabel(apiGroup.name));
+    lines.push(`  ${apId}["${apParts.join('<br/>')}"]:::security`);
+    lines.push(`  ${lastId} --> ${apId}`);
+    lastId = apId;
+  }
+
+  // API Discovery
+  if (spec.enable_api_discovery) {
+    const adId = id();
+    lines.push(`  ${adId}["API Discovery"]:::security`);
+    lines.push(`  ${lastId} --> ${adId}`);
+    lastId = adId;
+  }
+
+  // Data Guard — with rule names
+  if (spec.data_guard_rules) {
+    const dgId = id();
+    const dgParts = ['Data Guard'];
+    if (spec.data_guard_rules.metadata?.name) dgParts.push(escapeLabel(spec.data_guard_rules.metadata.name));
+    lines.push(`  ${dgId}["${dgParts.join('<br/>')}"]:::security`);
+    lines.push(`  ${lastId} --> ${dgId}`);
+    lastId = dgId;
+  }
+
+  // Client-Side Defense — with policy name
+  if (spec.client_side_defense) {
+    const csdId = id();
+    const csdParts = ['Client-Side Defense'];
+    if (spec.client_side_defense.policy?.name) csdParts.push(escapeLabel(spec.client_side_defense.policy.name));
+    lines.push(`  ${csdId}["${csdParts.join('<br/>')}"]:::security`);
+    lines.push(`  ${lastId} --> ${csdId}`);
+    lastId = csdId;
   }
 
   // WAF — inline, color-coded
@@ -85,14 +125,14 @@ function buildMermaid(lb, pools) {
 
   // Routes hub
   const routesId = id();
-  lines.push(`  ${routesId}{"Routes"}`);
+  lines.push(`  ${routesId}{"Routes"}:::route`);
   lines.push(`  ${lastId} --> ${routesId}`);
 
   // Default route pools
   const defaultPools = spec.default_route_pools || [];
   if (defaultPools.length > 0) {
     const defId = id();
-    lines.push(`  ${defId}["Default Route"]`);
+    lines.push(`  ${defId}["Default Route"]:::route`);
     lines.push(`  ${routesId} --> ${defId}`);
     for (const poolRef of defaultPools) {
       const poolName = poolRef.pool?.name;
@@ -106,7 +146,7 @@ function buildMermaid(lb, pools) {
     const sr = route.simple_route || route;
     const match = sr.path?.prefix || sr.path?.regex || sr.path?.exact || '/';
     const routeId = id();
-    lines.push(`  ${routeId}["Route: ${escapeLabel(match)}"]`);
+    lines.push(`  ${routeId}["Route: ${escapeLabel(match)}"]:::route`);
     lines.push(`  ${routesId} --> ${routeId}`);
 
     let routeParent = routeId;
@@ -130,22 +170,28 @@ function buildMermaid(lb, pools) {
     const match = rr.path?.prefix || rr.path?.regex || '/';
     const target = rr.host_redirect || rr.path_redirect || 'redirect';
     const rrId = id();
-    lines.push(`  ${rrId}["Redirect: ${escapeLabel(match)} → ${escapeLabel(target)}"]`);
+    lines.push(`  ${rrId}["Redirect: ${escapeLabel(match)} → ${escapeLabel(target)}"]:::route`);
     lines.push(`  ${routesId} --> ${rrId}`);
   }
 
   // Style classes
   lines.push('');
-  lines.push('  classDef security fill:#4a90d9,stroke:#2c5f8a,color:#fff');
-  lines.push('  classDef waf fill:#27ae60,stroke:#1e8449,color:#fff');
-  lines.push('  classDef wafMissing fill:#e74c3c,stroke:#c0392b,color:#fff');
+  lines.push('  classDef user fill:#f8fafc,stroke:#94a3b8,stroke-width:1.5px,color:#334155');
+  lines.push('  classDef lb fill:#1a3a5c,stroke:#0f2440,stroke-width:2px,color:#fff');
+  lines.push('  classDef domain fill:#dbeafe,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a5f');
+  lines.push('  classDef security fill:#3b6cb4,stroke:#2a4d82,stroke-width:1.5px,color:#fff');
+  lines.push('  classDef waf fill:#1d8348,stroke:#145a32,stroke-width:2px,color:#fff');
+  lines.push('  classDef wafMissing fill:#c0392b,stroke:#922b21,stroke-width:2px,color:#fff');
+  lines.push('  classDef route fill:#e8edf2,stroke:#94a3b8,stroke-width:1.5px,color:#334155');
+  lines.push('  classDef pool fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#92400e');
+  lines.push('  classDef origin fill:#f0fdf4,stroke:#16a34a,stroke-width:1px,color:#14532d');
 
   return lines.join('\n');
 }
 
 function renderPool(lines, id, parentId, poolName, poolData) {
   const poolId = id();
-  lines.push(`  ${poolId}[["${escapeLabel(poolName)}"]]`);
+  lines.push(`  ${poolId}[["${escapeLabel(poolName)}"]]:::pool`);
   lines.push(`  ${parentId} --> ${poolId}`);
 
   if (!poolData?.spec?.origin_servers) {
@@ -169,7 +215,7 @@ function renderPool(lines, id, parentId, poolName, poolData) {
     const parts = [escapeLabel(addr)];
     if (addrType) parts.push(addrType);
     if (site) parts.push(escapeLabel(site));
-    lines.push(`  ${srvId}(["${parts.join('<br/>')}"])`);
+    lines.push(`  ${srvId}(["${parts.join('<br/>')}"]):::origin`);
     lines.push(`  ${poolId} --> ${srvId}`);
   }
 }

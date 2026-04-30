@@ -6,6 +6,8 @@ const { log } = require('./logger');
 
 const MMDC_PATH = path.resolve(__dirname, '../../node_modules/.bin/mmdc');
 const PUPPETEER_CONFIG = path.resolve(__dirname, '../../puppeteer-config.json');
+const MERMAID_THEME = path.resolve(__dirname, '../assets/mermaid-theme.json');
+const MERMAID_CSS = path.resolve(__dirname, '../assets/mermaid-styles.css');
 const RENDER_TIMEOUT_MS = 60000;
 
 class DiagramRenderer {
@@ -21,7 +23,7 @@ class DiagramRenderer {
       await new Promise((resolve, reject) => {
         const proc = execFile(
           MMDC_PATH,
-          ['-i', inputPath, '-o', outputPath, '-b', 'white', '-s', '2', '-p', PUPPETEER_CONFIG],
+          ['-i', inputPath, '-o', outputPath, '-b', 'white', '-s', '2', '-p', PUPPETEER_CONFIG, '-c', MERMAID_THEME, '-C', MERMAID_CSS],
           { timeout },
           (error, stdout, stderr) => {
             if (error) {

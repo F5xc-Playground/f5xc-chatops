@@ -1,0 +1,22 @@
+/* F5 XC ChatOps — Mermaid diagram styles */
+/* Colors are handled by classDef in the Mermaid source. */
+/* This CSS adds visual polish: shadows, rounded corners, edge styling. */
+
+.node rect,
+.node polygon,
+.node circle,
+.node ellipse,
+.node .label-container {
+  filter: drop-shadow(1px 2px 4px rgba(0, 0, 0, 0.12));
+  rx: 6;
+  ry: 6;
+}
+
+.edgePath .path {
+  stroke: #64748b;
+  stroke-width: 2px;
+}
+
+marker path {
+  fill: #64748b;
+}
