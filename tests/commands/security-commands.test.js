@@ -1,3 +1,4 @@
+const rateLimitStatus = require('../../src/commands/rate-limit-status');
 const wafStatus = require('../../src/commands/waf-status');
 const servicePolicies = require('../../src/commands/service-policies');
 const botDefense = require('../../src/commands/bot-defense-status');
@@ -31,6 +32,98 @@ describe('security commands plugin contracts', () => {
   test('security-event', () => {
     expect(securityEvent.meta.name).toBe('security-event');
     expect(securityEvent.meta.slashCommand).toBe('/xc-event');
+  });
+});
+
+describe('rate-limit-status', () => {
+  test('exports valid plugin contract', () => {
+    expect(rateLimitStatus.meta.name).toBe('rate-limit-status');
+    expect(rateLimitStatus.meta.slashCommand).toBe('/xc-ratelimit');
+    expect(rateLimitStatus.intents.length).toBeGreaterThanOrEqual(15);
+  });
+
+  test('shows rate limit config when present', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'my-lb' },
+          spec: {
+            rate_limit: {
+              rate_limiter: { total_number: 100, unit: 'MINUTE' },
+            },
+          },
+        }),
+      },
+    };
+    await rateLimitStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'my-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Rate Limit');
+    expect(text).toContain('100');
+    expect(text).toContain('minute');
+  });
+
+  test('shows disabled when no rate limit configured', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'my-lb' },
+          spec: {},
+        }),
+      },
+    };
+    await rateLimitStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'my-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toMatch(/no.*rate.*limit.*configured|not.*configured|disabled|none/i);
+  });
+
+  test('prompts for namespace when missing', async () => {
+    const messages = [];
+    const tenant = { name: 'test', namespaces: ['prod', 'staging'] };
+    await rateLimitStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: {},
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('namespace');
+  });
+
+  test('prompts for LB when namespace given but no resourceName', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({ items: [{ name: 'lb-1' }, { name: 'lb-2' }] }),
+      },
+    };
+    await rateLimitStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('lb-1');
+    expect(text).toContain('lb-2');
   });
 });
 
