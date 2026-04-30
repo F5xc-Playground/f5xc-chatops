@@ -7,6 +7,56 @@ const FRESH_MODIFIERS = [
   'force refresh', 'no cache', 'live data', 'fresh', 'live',
 ];
 
+const CONTRACTIONS = {
+  "what's": 'what is',
+  "where's": 'where is',
+  "who's": 'who is',
+  "how's": 'how is',
+  "that's": 'that is',
+  "there's": 'there is',
+  "here's": 'here is',
+  "it's": 'it is',
+  "isn't": 'is not',
+  "aren't": 'are not',
+  "don't": 'do not',
+  "doesn't": 'does not',
+  "didn't": 'did not',
+  "can't": 'cannot',
+  "couldn't": 'could not',
+  "won't": 'will not',
+  "wouldn't": 'would not',
+  "shouldn't": 'should not',
+  "haven't": 'have not',
+  "hasn't": 'has not',
+  "wasn't": 'was not',
+  "weren't": 'were not',
+  "i'm": 'i am',
+  "we're": 'we are',
+  "they're": 'they are',
+  "you're": 'you are',
+  "i've": 'i have',
+  "we've": 'we have',
+  "they've": 'they have',
+  "you've": 'you have',
+  "i'll": 'i will',
+  "we'll": 'we will',
+  "gimme": 'give me',
+  "gonna": 'going to',
+  "wanna": 'want to',
+  "lemme": 'let me',
+};
+
+function normalizeText(text) {
+  let result = text.toLowerCase();
+  for (const [contraction, expansion] of Object.entries(CONTRACTIONS)) {
+    result = result.replace(new RegExp(`\\b${contraction.replace("'", "'")}\\b`, 'g'), expansion);
+    result = result.replace(new RegExp(`\\b${contraction.replace("'", "'")}\\b`, 'g'), expansion);
+  }
+  result = result.replace(/[?!.,;:]+(\s|$)/g, '$1');
+  result = result.replace(/\s+/g, ' ').trim();
+  return result;
+}
+
 class NLPEngine {
   constructor({ threshold = 0.75 } = {}) {
     this._threshold = threshold;
@@ -48,14 +98,15 @@ class NLPEngine {
   }
 
   async process(text) {
-    const fresh = FRESH_MODIFIERS.some((mod) => text.toLowerCase().includes(mod));
+    const normalized = normalizeText(text);
+    const fresh = FRESH_MODIFIERS.some((mod) => normalized.includes(mod));
     const cleanText = FRESH_MODIFIERS.reduce(
       (t, mod) => t.replace(new RegExp(mod, 'gi'), ''),
-      text
+      normalized
     ).trim();
 
     let classifyText = cleanText;
-    const lowerText = text.toLowerCase();
+    const lowerText = normalized;
     for (const ns of this._namespaces) {
       const nsLower = ns.toLowerCase();
       if (nsLower.includes('-') && lowerText.includes(nsLower)) {

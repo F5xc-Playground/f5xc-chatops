@@ -134,3 +134,39 @@ describe('NLPEngine — hyphenated namespaces', () => {
     expect(result.entities.resourceName).toBe('demo-shop-fe');
   });
 });
+
+describe('NLPEngine — text normalization', () => {
+  let engine;
+
+  beforeAll(async () => {
+    engine = new NLPEngine({ threshold: 0.75 });
+    engine.addIntents([
+      { utterance: 'what is in namespace prod', intent: 'namespace.summary' },
+      { utterance: 'show me all sites', intent: 'site.status' },
+      { utterance: 'are there any alerts', intent: 'alert.status' },
+      { utterance: 'what quotas are critical', intent: 'quota.check' },
+    ]);
+    engine.addNamespaceEntities(['prod', 'staging']);
+    await engine.train();
+  });
+
+  test('expands contractions before classification', async () => {
+    const result = await engine.process("what's in namespace prod");
+    expect(result.intent).toBe('namespace.summary');
+  });
+
+  test('strips trailing punctuation before classification', async () => {
+    const result = await engine.process('what quotas are critical?');
+    expect(result.intent).toBe('quota.check');
+  });
+
+  test('handles "aren\'t" contraction', async () => {
+    const result = await engine.process("aren't there any alerts?");
+    expect(result.intent).toBe('alert.status');
+  });
+
+  test('normalizes multiple spaces', async () => {
+    const result = await engine.process('show  me   all  sites');
+    expect(result.intent).toBe('site.status');
+  });
+});
