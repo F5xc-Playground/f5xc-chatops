@@ -1,4 +1,5 @@
 const rateLimitStatus = require('../../src/commands/rate-limit-status');
+const maliciousUser = require('../../src/commands/malicious-user-status');
 const wafStatus = require('../../src/commands/waf-status');
 const servicePolicies = require('../../src/commands/service-policies');
 const botDefense = require('../../src/commands/bot-defense-status');
@@ -124,6 +125,105 @@ describe('rate-limit-status', () => {
     const text = JSON.stringify(messages[0]);
     expect(text).toContain('lb-1');
     expect(text).toContain('lb-2');
+  });
+});
+
+describe('malicious-user-status', () => {
+  test('exports valid plugin contract', () => {
+    expect(maliciousUser.meta.name).toBe('malicious-user-status');
+    expect(maliciousUser.meta.slashCommand).toBe('/xc-maluser');
+    expect(maliciousUser.intents.length).toBeGreaterThanOrEqual(15);
+  });
+
+  test('shows MUD config when enabled', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'my-lb' },
+          spec: {
+            enable_malicious_user_detection: {},
+            enable_challenge: {
+              malicious_user_mitigation: { name: 'my-mud-policy', namespace: 'prod' },
+            },
+          },
+        }),
+      },
+    };
+    await maliciousUser.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'my-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Malicious User');
+    expect(text).toContain('my-mud-policy');
+  });
+
+  test('shows disabled when MUD not configured', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'my-lb' },
+          spec: {},
+        }),
+      },
+    };
+    await maliciousUser.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'my-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toMatch(/no.*malicious.*user.*detection|not.*configured|disabled|none/i);
+  });
+
+  test('shows default mitigation when using defaults', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'my-lb' },
+          spec: {
+            enable_malicious_user_detection: {},
+            enable_challenge: {
+              default_mitigation_settings: {},
+            },
+          },
+        }),
+      },
+    };
+    await maliciousUser.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'my-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Default');
+  });
+
+  test('prompts for namespace when missing', async () => {
+    const messages = [];
+    const tenant = { name: 'test', namespaces: ['prod'] };
+    await maliciousUser.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: {},
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('namespace');
   });
 });
 
