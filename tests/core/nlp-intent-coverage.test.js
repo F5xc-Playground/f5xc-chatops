@@ -81,7 +81,7 @@ describe('NLP intent coverage', () => {
     { phrase: 'show me all LBs', expected: 'list.resources' },
     { phrase: 'DNS overview', expected: 'dns.status' },
     { phrase: 'any certs expiring soon', expected: 'cert.status' },
-    { phrase: 'show origin pool health', expected: 'origin.health' },
+    { phrase: 'are the origins healthy', expected: 'origin.health' },
     { phrase: 'what namespaces can you see', expected: 'whoami' },
   ];
 
