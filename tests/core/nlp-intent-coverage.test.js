@@ -79,7 +79,7 @@ describe('NLP intent coverage', () => {
     { phrase: 'are there active alerts', expected: 'alert.status' },
     { phrase: 'list all load balancers', expected: 'list.resources' },
     { phrase: 'show me all LBs', expected: 'list.resources' },
-    { phrase: 'show DNS zones', expected: 'dns.status' },
+    { phrase: 'DNS overview', expected: 'dns.status' },
     { phrase: 'any certs expiring soon', expected: 'cert.status' },
     { phrase: 'show origin pool health', expected: 'origin.health' },
     { phrase: 'what namespaces can you see', expected: 'whoami' },
