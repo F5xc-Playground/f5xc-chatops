@@ -10,90 +10,61 @@ Every slash command also works as a natural language query — @mention the bot 
 
 ### See what's running
 
-`/xc-ns <namespace>` — Namespace resource summary
-> *"what's in the prod namespace"* · *"give me a summary of namespace staging"*
-
-`/xc-list [namespace] [type]` — List resources by type. Load balancer types show a cross-namespace inventory when no namespace is given; other types prompt for a namespace.
-> *"list all load balancers"* · *"list all load balancers in prod"* · *"show WAF policies in staging"*
-
-`/xc-whoami` — Bot identity and accessible namespaces
-> *"what namespaces can you see"* · *"what roles do you have"*
+| Command | Description | Example phrases |
+|---------|-------------|-----------------|
+| `/xc-ns <namespace>` | Namespace resource summary | *"what's in the prod namespace"* · *"summary of namespace staging"* |
+| `/xc-list [namespace] [type]` | List resources by type | *"list all load balancers"* · *"show WAF policies in staging"* |
+| `/xc-whoami` | Bot identity and accessible namespaces | *"what namespaces can you see"* · *"what roles do you have"* |
 
 ### Inspect load balancers
 
-`/xc-lb <namespace> <lb>` — Load balancer detail (domains, WAF, bot defense, routes, pools)
-> *"tell me about the load balancer"* · *"what is configured on the LB"*
+| Command | Description | Example phrases |
+|---------|-------------|-----------------|
+| `/xc-lb <namespace> <lb>` | LB detail (domains, WAF, bot defense, routes, pools) | *"tell me about the load balancer"* · *"what is configured on the LB"* |
+| `/xc-diagram <namespace> <lb>` | Visual LB chain diagram (PNG) | *"diagram the load balancer chain"* · *"show me a diagram of demo-shop-fe"* |
+| `/xc-origins <namespace> <pool>` | Origin pool servers | *"show origin pool health"* · *"which origins are down"* |
 
-`/xc-diagram <namespace> <lb>` — Visual LB chain diagram (PNG uploaded to channel)
-> *"diagram the load balancer chain"* · *"show me a diagram of demo-shop-fe"*
+### Certificates and quotas
 
-`/xc-origins <namespace> <pool>` — Origin pool servers
-> *"show origin pool health"* · *"which origins are down"*
+| Command | Description | Example phrases |
+|---------|-------------|-----------------|
+| `/xc-certs <namespace>` | Certificate expiration scan (green/yellow/red) | *"any certs expiring soon"* · *"are any certificates expired"* |
+| `/xc-quota [filter]` | Tenant-wide quota utilization | *"show me quota usage"* · *"show me critical quotas"* · *"quota usage for dns"* |
 
-### Monitor certificates
+### Security posture
 
-`/xc-certs <namespace>` — Certificate expiration scan (color-coded: green/yellow/red)
-> *"any certs expiring soon"* · *"are any certificates expired"*
+| Command | Description | Example phrases |
+|---------|-------------|-----------------|
+| `/xc-security <namespace> <lb>` | All security controls at a glance | *"what security is on this LB"* · *"security posture for my LB"* |
+| `/xc-waf <namespace> <lb>` | WAF policy and mode | *"is the WAF in blocking mode"* · *"check the web application firewall"* |
+| `/xc-bot <namespace> <lb>` | Bot defense status | *"is bot defense enabled"* · *"check bot defense"* |
+| `/xc-ratelimit <namespace> <lb>` | Rate limiting configuration | *"is rate limiting enabled"* · *"show me the rate limit on my LB"* |
+| `/xc-maluser <namespace> <lb>` | Malicious user detection/mitigation | *"is MUD enabled"* · *"check malicious user detection"* |
+| `/xc-policies <namespace> <lb>` | Service policies on an LB | *"what service policies are on the LB"* · *"what policies are applied"* |
+| `/xc-api-sec <namespace>` | API discovery and protection per LB | *"api security status"* · *"are there any shadow APIs"* |
 
-### Check quota utilization
+### Security events and AI Assistant
 
-`/xc-quota [filter]` — Tenant-wide quota utilization. Filter by tier (`critical`, `warning`, `all`) or search by resource name.
-> *"show me quota usage"* · *"show me critical quotas"* · *"quota usage for dns"*
+| Command | Description | Example phrases |
+|---------|-------------|-----------------|
+| `/xc-event <support-id>` | AI-powered security event explanation | *"explain security event abc-123"* · *"look up request id abc-123"* |
+| `/xc-ask <question>` | Free-form AI Assistant query | *"how do I configure rate limiting"* · *"ask about DDoS protection"* |
+| `/xc-suggest <namespace> <lb>` | AI-powered LB optimization suggestions | *"suggest improvements for the LB"* · *"how can I optimize my LB"* |
 
-### Review security posture
+### Infrastructure
 
-`/xc-waf <namespace> <lb>` — WAF policy and mode
-> *"is the WAF in blocking mode"* · *"check the web application firewall"*
-
-`/xc-policies <namespace> <lb>` — Service policies on an LB
-> *"what service policies are on the LB"* · *"what policies are applied"*
-
-`/xc-bot <namespace> <lb>` — Bot defense status
-> *"is bot defense enabled"* · *"check bot defense"*
-
-`/xc-ratelimit <namespace> <lb>` — Rate limiting configuration
-> *"is rate limiting enabled"* · *"show me the rate limit on my LB"*
-
-`/xc-maluser <namespace> <lb>` — Malicious user detection/mitigation
-> *"is MUD enabled"* · *"check malicious user detection"* · *"mal user status"*
-
-`/xc-security <namespace> <lb>` — Security posture summary (all controls at a glance)
-> *"what security is on this LB"* · *"security posture for my load balancer"*
-
-`/xc-api-sec <namespace>` — API discovery and protection per LB
-> *"api security status"* · *"are there any shadow APIs"*
-
-### Investigate security events
-
-`/xc-event <support-id>` — AI-powered security event explanation
-> *"explain security event abc-123"* · *"look up request id abc-123"*
-
-### Ask the AI Assistant
-
-`/xc-ask <question>` — Free-form AI Assistant query
-> *"how do I configure rate limiting for my API"* · *"ask the assistant about DDoS protection"*
-
-`/xc-suggest <namespace> <lb>` — AI-powered LB optimization suggestions
-> *"suggest improvements for the load balancer"* · *"how can I optimize my LB"*
-
-### Monitor infrastructure
-
-`/xc-sites` — Customer Edge sites by default (`/xc-sites re` for RE, `/xc-sites all` for both)
-> *"show me all sites"* · *"are all sites online"* · *"show CE sites"*
-
-`/xc-site <name>` — Single site detail
-> *"details on site dallas-ce"* · *"describe site"*
-
-`/xc-dns <namespace>` — DNS zones and GSLB
-> *"show DNS zones"* · *"what DNS zones are configured"*
-
-`/xc-alerts [namespace]` — Active firing alerts (all namespaces if omitted)
-> *"any alerts firing"* · *"are there any active alerts"*
+| Command | Description | Example phrases |
+|---------|-------------|-----------------|
+| `/xc-sites` | Site status (CE default, `re` or `all` for more) | *"show me all sites"* · *"are all sites online"* |
+| `/xc-site <name>` | Single site detail | *"details on site dallas-ce"* · *"describe site"* |
+| `/xc-dns <namespace>` | DNS zones and GSLB | *"show DNS zones"* · *"what DNS zones are configured"* |
+| `/xc-alerts [namespace]` | Active firing alerts | *"any alerts firing"* · *"are there any active alerts"* |
 
 ### Help
 
-`/xc-help [command-name]` — List all commands or get detail on one
-> *"what can you do"* · *"how do I use this"*
+| Command | Description | Example phrases |
+|---------|-------------|-----------------|
+| `/xc-help [command]` | List all commands or get detail on one | *"what can you do"* · *"how do I use this"* |
 
 ## How It Works
 
