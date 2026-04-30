@@ -5,6 +5,7 @@ const servicePolicies = require('../../src/commands/service-policies');
 const botDefense = require('../../src/commands/bot-defense-status');
 const apiSecurity = require('../../src/commands/api-security-status');
 const securityEvent = require('../../src/commands/security-event');
+const securityPosture = require('../../src/commands/security-posture');
 const formatter = require('../../src/core/slack-formatter');
 const { Cache } = require('../../src/core/cache');
 
@@ -224,6 +225,108 @@ describe('malicious-user-status', () => {
     });
     const text = JSON.stringify(messages[0]);
     expect(text).toContain('namespace');
+  });
+});
+
+describe('security-posture', () => {
+  test('exports valid plugin contract', () => {
+    expect(securityPosture.meta.name).toBe('security-posture');
+    expect(securityPosture.meta.slashCommand).toBe('/xc-security');
+    expect(securityPosture.intents.length).toBeGreaterThanOrEqual(15);
+  });
+
+  test('shows all security controls for a fully configured LB', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'my-lb' },
+          spec: {
+            app_firewall: { name: 'my-waf' },
+            bot_defense: { policy: {} },
+            rate_limit: { rate_limiter: { total_number: 100, unit: 'SECOND' } },
+            enable_malicious_user_detection: {},
+            active_service_policies: { policies: [{ name: 'pol-1' }] },
+            enable_api_discovery: {},
+            api_specification: {},
+            enable_ip_reputation: {},
+            l7_ddos_protection: {},
+          },
+        }),
+      },
+    };
+    await securityPosture.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'my-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('WAF');
+    expect(text).toContain('my-waf');
+    expect(text).toContain('Bot Defense');
+    expect(text).toContain('Rate Limit');
+    expect(text).toContain('100');
+    expect(text).toContain('Malicious User');
+    expect(text).toContain('Service Policies');
+    expect(text).toContain('API Security');
+    expect(text).toContain('Discovery');
+    expect(text).toContain('IP Reputation');
+    expect(text).toContain('DDoS');
+    expect(text).toContain('8/8 controls active');
+  });
+
+  test('shows disabled controls on bare LB', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'bare-lb' },
+          spec: { disable_waf: true },
+        }),
+      },
+    };
+    await securityPosture.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'bare-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Security Posture');
+    expect(text).toContain('Disabled');
+    expect(text).toContain('0/8 controls active');
+  });
+
+  test('shows partial controls', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockResolvedValue({
+          metadata: { name: 'partial-lb' },
+          spec: {
+            app_firewall: { name: 'basic-waf' },
+            service_policies_from_namespace: {},
+          },
+        }),
+      },
+    };
+    await securityPosture.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'partial-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('basic-waf');
+    expect(text).toContain('From namespace');
+    expect(text).toContain('2/8 controls active');
   });
 });
 
