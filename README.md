@@ -98,7 +98,7 @@ Results are cached for 5 minutes to avoid hammering the API. Add `--fresh` to an
 
 ## How Output Looks
 
-**Tables** — Native Slack table blocks. Lists over 100 rows are capped with a full CSV file uploaded to the channel.
+**Tables** — Native Slack table blocks. Large results are capped and a full CSV file is uploaded to the channel.
 
 **Status indicators** — Color-coded emoji: 🟢 healthy · 🟡 warning · 🔴 critical · ⚪ unknown
 

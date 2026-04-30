@@ -92,28 +92,32 @@ describe('alert-status handler', () => {
 });
 
 describe('site-status handler', () => {
-  test('lists CE sites by default', async () => {
-    const messages = [];
-    const tenant = {
+  function makeSiteTenant(sites) {
+    return {
       name: 'test',
       client: {
         get: jest.fn().mockImplementation((path) => {
           if (path.endsWith('/sites')) {
-            return Promise.resolve({
-              items: [
-                { metadata: { name: 'site-1' }, labels: { 'ves.io/siteType': 'ves-io-ce' }, status: { connected_state: 'ONLINE' } },
-                { metadata: { name: 'site-2' }, labels: { 'ves.io/siteType': 'ves-io-re' }, status: { connected_state: 'ONLINE' } },
-              ],
-            });
+            return Promise.resolve({ items: sites });
           }
           const name = path.split('/').pop();
-          return Promise.resolve({ metadata: { name }, spec: { connected_state: 'ONLINE' }, status: { connected_state: 'ONLINE' } });
+          const site = sites.find((s) => (s.metadata?.name || s.name) === name);
+          return Promise.resolve(site || { metadata: { name }, spec: {} });
         }),
       },
     };
+  }
+
+  const defaultSites = [
+    { metadata: { name: 'site-1' }, labels: { 'ves.io/siteType': 'ves-io-ce' }, status: { connected_state: 'ONLINE' } },
+    { metadata: { name: 'site-2' }, labels: { 'ves.io/siteType': 'ves-io-re' }, status: { connected_state: 'ONLINE' } },
+  ];
+
+  test('lists CE sites by default', async () => {
+    const messages = [];
     await siteStatus.handler({
       say: (msg) => messages.push(msg),
-      tenant,
+      tenant: makeSiteTenant(defaultSites),
       cache: new Cache(),
       args: { raw: '' },
       formatter,
@@ -124,7 +128,7 @@ describe('site-status handler', () => {
     expect(text).toContain('Customer Edge');
   });
 
-  test('delegates to site-detail when arg is a site name', async () => {
+  test('delegates to site-detail when arg is a single site name (slash command)', async () => {
     const messages = [];
     const tenant = {
       name: 'test',
@@ -153,35 +157,125 @@ describe('site-status handler', () => {
     expect(text).toContain('Site:');
   });
 
-  test('lists all sites with "all" filter', async () => {
+  test('NLP "show me all sites" stays in site-status, not delegated (BUG-V4)', async () => {
     const messages = [];
-    const tenant = {
-      name: 'test',
-      client: {
-        get: jest.fn().mockImplementation((path) => {
-          if (path.endsWith('/sites')) {
-            return Promise.resolve({
-              items: [
-                { metadata: { name: 'ce-1' }, labels: { 'ves.io/siteType': 'ves-io-ce' } },
-                { metadata: { name: 're-1' }, labels: { 'ves.io/siteType': 'ves-io-re' } },
-              ],
-            });
-          }
-          const name = path.split('/').pop();
-          return Promise.resolve({ metadata: { name }, spec: {} });
-        }),
-      },
-    };
     await siteStatus.handler({
       say: (msg) => messages.push(msg),
-      tenant,
+      tenant: makeSiteTenant(defaultSites),
+      cache: new Cache(),
+      args: { raw: 'show me all sites', resourceName: null },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('All Sites');
+    expect(text).toContain('site-1');
+    expect(text).toContain('site-2');
+    expect(text).not.toContain('not found');
+  });
+
+  test('NLP "show CE sites" stays in site-status (BUG-V4)', async () => {
+    const messages = [];
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant: makeSiteTenant(defaultSites),
+      cache: new Cache(),
+      args: { raw: 'show CE sites', resourceName: null },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Customer Edge');
+    expect(text).toContain('site-1');
+    expect(text).not.toContain('not found');
+  });
+
+  test('NLP "show me customer edge sites" detects CE mode', async () => {
+    const messages = [];
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant: makeSiteTenant(defaultSites),
+      cache: new Cache(),
+      args: { raw: 'show me customer edge sites', resourceName: null },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Customer Edge');
+  });
+
+  test('lists all sites with "all" filter', async () => {
+    const messages = [];
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant: makeSiteTenant(defaultSites),
       cache: new Cache(),
       args: { raw: 'all' },
       formatter,
     });
     const text = JSON.stringify(messages[0]);
-    expect(text).toContain('ce-1');
-    expect(text).toContain('re-1');
+    expect(text).toContain('site-1');
+    expect(text).toContain('site-2');
     expect(text).toContain('All Sites');
+  });
+
+  test('lists RE sites with "re" filter', async () => {
+    const messages = [];
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant: makeSiteTenant(defaultSites),
+      cache: new Cache(),
+      args: { raw: 're' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Regional Edge');
+    expect(text).toContain('site-2');
+    expect(text).not.toContain('site-1');
+  });
+
+  test('count summary uses actual counts, not display length (BUG-V8)', async () => {
+    const manySites = [];
+    for (let i = 0; i < 35; i++) {
+      manySites.push({
+        metadata: { name: `re-site-${i}` },
+        labels: { 'ves.io/siteType': 'ves-io-re' },
+        status: { connected_state: 'ONLINE' },
+      });
+    }
+    manySites.push({
+      metadata: { name: 'ce-site-0' },
+      labels: { 'ves.io/siteType': 'ves-io-ce' },
+      status: { connected_state: 'ONLINE' },
+    });
+    const messages = [];
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant: makeSiteTenant(manySites),
+      cache: new Cache(),
+      args: { raw: 're' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('35 Regional Edge sites');
+    expect(text).toContain('showing 30');
+  });
+
+  test('"all" mode total equals CE + RE + other (BUG-V8)', async () => {
+    const mixedSites = [
+      { metadata: { name: 'ce-1' }, labels: { 'ves.io/siteType': 'ves-io-ce' } },
+      { metadata: { name: 're-1' }, labels: { 'ves.io/siteType': 'ves-io-re' } },
+      { metadata: { name: 'unknown-1' }, labels: { 'ves.io/siteType': 'other' } },
+    ];
+    const messages = [];
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant: makeSiteTenant(mixedSites),
+      cache: new Cache(),
+      args: { raw: 'all' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('3 sites');
+    expect(text).toContain('1 CE');
+    expect(text).toContain('1 RE');
+    expect(text).toContain('1 other');
   });
 });

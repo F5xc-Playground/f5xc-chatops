@@ -206,6 +206,7 @@ async function renderInventory(say, formatter, resourceType, items, cached, dura
 
   const columns = getColumns(resourceType, true);
   const rows = buildRows(items, resourceType, true);
+  rows.sort((a, b) => (a.namespace || '').localeCompare(b.namespace || '') || (a.name || '').localeCompare(b.name || ''));
   const displayed = rows.slice(0, formatter.TABLE_MAX_ROWS);
   const overflow = rows.length > formatter.TABLE_MAX_ROWS;
 
@@ -220,10 +221,7 @@ async function renderInventory(say, formatter, resourceType, items, cached, dura
   ];
 
   await say({ blocks });
-
-  if (overflow) {
-    await uploadCsv(client, channelId, columns, rows, resourceType, 'all-namespaces');
-  }
+  await uploadCsv(client, channelId, columns, rows, resourceType, 'all-namespaces');
 }
 
 async function renderList(say, formatter, resourceType, namespace, items, cached, durationMs, client, channelId) {
@@ -239,6 +237,7 @@ async function renderList(say, formatter, resourceType, namespace, items, cached
 
   const columns = getColumns(resourceType, false);
   const rows = buildRows(items, resourceType, false);
+  rows.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const displayed = rows.slice(0, formatter.TABLE_MAX_ROWS);
   const overflow = rows.length > formatter.TABLE_MAX_ROWS;
 

@@ -219,6 +219,97 @@ describe('quota-check', () => {
     expect(text).toContain('HTTP Load Balancer');
     expect(text).not.toContain('Origin Pool');
   });
+
+  test('NL "what quotas are critical?" strips punctuation and parses tier', async () => {
+    const messages = [];
+    await quotaCheck.handler({
+      say: (msg) => messages.push(msg),
+      tenant: quotaTenant(),
+      cache: new Cache(),
+      args: { raw: 'what quotas are critical?' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Origin Pool');
+    expect(text).toContain('Service Policy');
+    expect(text).not.toContain('what are critical');
+  });
+
+  test('NL "what do I need to worry about?" does not become a search filter', async () => {
+    const messages = [];
+    await quotaCheck.handler({
+      say: (msg) => messages.push(msg),
+      tenant: quotaTenant(),
+      cache: new Cache(),
+      args: { raw: 'what quotas do I need to worry about?' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).not.toContain('what do i need');
+    expect(text).toContain('Origin Pool');
+  });
+
+  test('"warning" filter renders without error (BUG-V2)', async () => {
+    const messages = [];
+    await quotaCheck.handler({
+      say: (msg) => messages.push(msg),
+      tenant: quotaTenant(),
+      cache: new Cache(),
+      args: { raw: 'warning' },
+      formatter,
+    });
+    expect(messages.length).toBeGreaterThan(0);
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Origin Pool');
+  });
+
+  test('falls back to CSV on invalid_blocks error (BUG-V6)', async () => {
+    const messages = [];
+    let callCount = 0;
+    const say = (msg) => {
+      callCount++;
+      if (callCount === 1) {
+        const err = new Error('invalid_blocks');
+        err.data = { error: 'invalid_blocks' };
+        throw err;
+      }
+      messages.push(msg);
+    };
+    const mockClient = { files: { uploadV2: jest.fn().mockResolvedValue({}) } };
+    await quotaCheck.handler({
+      say,
+      tenant: quotaTenant(),
+      cache: new Cache(),
+      args: { raw: '', _channelId: 'C123' },
+      formatter,
+      client: mockClient,
+    });
+    expect(mockClient.files.uploadV2).toHaveBeenCalled();
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('too large');
+    expect(text).toContain('critical');
+  });
+
+  test('large dataset uses display limit and uploads CSV (BUG-V2)', async () => {
+    const quotaUsage = {};
+    for (let i = 0; i < 50; i++) {
+      quotaUsage[`Resource_${i}`] = { limit: { maximum: 100 }, usage: { current: 90 } };
+    }
+    const largeTenant = mockTenant({ quota_usage: quotaUsage });
+    const messages = [];
+    const mockClient = { files: { uploadV2: jest.fn().mockResolvedValue({}) } };
+    await quotaCheck.handler({
+      say: (msg) => messages.push(msg),
+      tenant: largeTenant,
+      cache: new Cache(),
+      args: { raw: '', _channelId: 'C123' },
+      formatter,
+      client: mockClient,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('showing 25 of 50');
+    expect(mockClient.files.uploadV2).toHaveBeenCalled();
+  });
 });
 
 describe('namespace-summary', () => {

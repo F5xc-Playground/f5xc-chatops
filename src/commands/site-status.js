@@ -23,14 +23,24 @@ module.exports = {
 
   handler: async ({ say, tenant, cache, args, formatter }) => {
     const filter = (args.resourceName || args.raw || '').trim().toLowerCase();
+    const isSingleToken = filter && !filter.includes(' ');
+    const MODE_WORDS = new Set(['ce', 're', 'all']);
 
-    if (filter && filter !== 'ce' && filter !== 're' && filter !== 'all') {
+    if (isSingleToken && !MODE_WORDS.has(filter) && filter !== '') {
       const siteDetail = require('./site-detail');
       await siteDetail.handler({ say, tenant, cache, args: { ...args, resourceName: filter, raw: filter }, formatter });
       return;
     }
 
-    const mode = (filter === 're') ? 're' : (filter === 'all') ? 'all' : 'ce';
+    let mode;
+    if (isSingleToken || !filter) {
+      mode = (filter === 're') ? 're' : (filter === 'all') ? 'all' : 'ce';
+    } else {
+      const words = new Set(filter.split(/\s+/));
+      if (words.has('all')) mode = 'all';
+      else if (words.has('re') || filter.includes('regional edge')) mode = 're';
+      else mode = 'ce';
+    }
 
     const cacheKey = `${tenant.name}:sites:${mode}`;
     if (!args.fresh) {
@@ -100,9 +110,18 @@ async function renderSites(say, formatter, sites, counts, mode, cached, duration
   }
 
   const modeLabel = mode === 're' ? 'Regional Edge' : mode === 'ce' ? 'Customer Edge' : 'All';
-  const countSummary = mode === 'all'
-    ? `${counts.total} sites (${counts.ce} CE, ${counts.re} RE)`
-    : `${sites.length} ${modeLabel} sites`;
+  const modeCount = mode === 'ce' ? counts.ce : mode === 're' ? counts.re : counts.total;
+  let countSummary;
+  if (mode === 'all') {
+    const parts = [`${counts.ce} CE`, `${counts.re} RE`];
+    const other = counts.total - counts.ce - counts.re;
+    if (other > 0) parts.push(`${other} other`);
+    countSummary = `${counts.total} sites (${parts.join(', ')})`;
+  } else {
+    countSummary = sites.length < modeCount
+      ? `${modeCount} ${modeLabel} sites (showing ${sites.length})`
+      : `${modeCount} ${modeLabel} sites`;
+  }
 
   const rows = sites.map((s) => ({
     name: s.name,

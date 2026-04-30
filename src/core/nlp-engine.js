@@ -59,7 +59,7 @@ class NLPEngine {
     for (const ns of this._namespaces) {
       const nsLower = ns.toLowerCase();
       if (nsLower.includes('-') && lowerText.includes(nsLower)) {
-        classifyText = classifyText.replace(new RegExp(ns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+        classifyText = classifyText.replace(new RegExp(ns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), 'prod').trim();
       }
     }
 
@@ -114,10 +114,14 @@ class NLPEngine {
     const FILLER = new Set([
       'show', 'me', 'the', 'a', 'an', 'of', 'for', 'in', 'on', 'about',
       'tell', 'get', 'check', 'list', 'all', 'my', 'is', 'are', 'what',
+      'how', 'do', 'does', 'which', 'can', 'has', 'have', 'any', 'that',
       'load', 'balancer', 'balancers', 'lb', 'lbs', 'origin', 'pool',
       'pools', 'diagram', 'status', 'waf', 'xc', 'namespace', 'ns',
       'details', 'detail', 'describe', 'summary', 'summarize', 'config',
       'configuration', 'service', 'policies', 'policy', 'firewall',
+      'blocking', 'monitoring', 'mode', 'using',
+      'bot', 'defense', 'protection',
+      'enabled', 'disabled', 'configured', 'attached', 'applied',
     ]);
 
     if (!entities.resourceName) {

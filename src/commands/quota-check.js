@@ -64,8 +64,17 @@ module.exports = {
   },
 };
 
+const QUOTA_FILLER = new Set([
+  'show', 'me', 'quotas', 'quota', 'for', 'the', 'and', 'above', 'usage', 'limits',
+  'what', 'are', 'is', 'do', 'does', 'we', 'i', 'need', 'to', 'worry', 'about',
+  'which', 'how', 'much', 'many', 'any', 'our', 'my', 'a', 'an', 'of', 'in', 'on',
+  'near', 'running', 'heavily', 'consumed', 'check', 'have', 'has', 'left', 'out',
+  'capacity', 'tell', 'can', 'see', 'look', 'at', 'that', 'there',
+]);
+
 function parseArgs(raw) {
-  const tokens = raw.toLowerCase().split(/\s+/).filter(Boolean);
+  const tokens = raw.toLowerCase().split(/\s+/).filter(Boolean)
+    .map((t) => t.replace(/[?!.,;:]+$/, ''));
   let tier = null;
   const searchParts = [];
 
@@ -74,7 +83,7 @@ function parseArgs(raw) {
       tier = token;
     } else if (['hot', 'high', 'maxed'].includes(token)) {
       tier = tier || 'critical';
-    } else if (!['show', 'me', 'quotas', 'quota', 'for', 'the', 'and', 'above', 'usage', 'limits'].includes(token)) {
+    } else if (!QUOTA_FILLER.has(token)) {
       searchParts.push(token);
     }
   }
@@ -103,6 +112,25 @@ async function uploadCsv(client, channelId, columns, rows, label) {
     });
   } catch {
     // best-effort
+  }
+}
+
+const QUOTA_DISPLAY_LIMIT = 25;
+
+async function safeSay(say, blocks, client, channelId, csvColumns, csvRows, csvLabel) {
+  try {
+    await say({ blocks });
+  } catch (err) {
+    if (err.data?.error === 'invalid_blocks' && client && channelId) {
+      await uploadCsv(client, channelId, csvColumns, csvRows, csvLabel);
+      await say({
+        blocks: [
+          { type: 'section', text: { type: 'mrkdwn', text: `Result too large for inline display — uploaded as \`quota-${csvLabel}.csv\`. Try \`/xc-quota critical\` for the worst offenders.` } },
+        ],
+      });
+    } else {
+      throw err;
+    }
   }
 }
 
@@ -139,8 +167,8 @@ async function renderQuotas(say, formatter, items, tier, search, cached, duratio
   blocks.push({ type: 'header', text: { type: 'plain_text', text: titleParts.join(' ') } });
 
   if (visible.length > 0) {
-    const displayed = visible.slice(0, formatter.TABLE_MAX_ROWS);
-    const overflow = visible.length > formatter.TABLE_MAX_ROWS;
+    const displayed = visible.slice(0, QUOTA_DISPLAY_LIMIT);
+    const overflow = visible.length > QUOTA_DISPLAY_LIMIT;
     const rows = displayed.map((q) => {
       const pct = Math.round((q.current / q.maximum) * 100);
       return {
@@ -152,7 +180,7 @@ async function renderQuotas(say, formatter, items, tier, search, cached, duratio
     });
 
     const countLabel = overflow
-      ? `showing ${formatter.TABLE_MAX_ROWS} of ${visible.length}`
+      ? `showing ${QUOTA_DISPLAY_LIMIT} of ${visible.length}`
       : `${visible.length} resources`;
     blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*Quotas* _(${countLabel})_` } });
     blocks.push(formatter.tableBlock(['resource', 'usage', 'pct', 'status'], rows));
@@ -170,29 +198,32 @@ async function renderQuotas(say, formatter, items, tier, search, cached, duratio
   }
 
   blocks.push(formatter.footer({ durationMs, cached }));
-  await say({ blocks });
+
+  const allCsvRows = visible.map((q) => {
+    const pct = Math.round((q.current / q.maximum) * 100);
+    return { resource: q.name, usage: `${q.current} / ${q.maximum}`, pct: `${pct}%` };
+  });
+  await safeSay(say, blocks, client, channelId, ['resource', 'usage', 'pct'], allCsvRows, 'capped');
 
   if (showAll && unlimited.length > 0) {
     unlimited.sort((a, b) => b.current - a.current);
-    const displayed = unlimited.slice(0, formatter.TABLE_MAX_ROWS);
+    const displayed = unlimited.slice(0, QUOTA_DISPLAY_LIMIT);
     const rows = displayed.map((q) => ({
       resource: q.name,
       current: String(q.current),
     }));
-    const uncappedLabel = unlimited.length > formatter.TABLE_MAX_ROWS
-      ? `showing ${formatter.TABLE_MAX_ROWS} of ${unlimited.length}`
+    const uncappedLabel = unlimited.length > QUOTA_DISPLAY_LIMIT
+      ? `showing ${QUOTA_DISPLAY_LIMIT} of ${unlimited.length}`
       : `${unlimited.length} resources`;
-    await say({
-      blocks: [
-        { type: 'section', text: { type: 'mrkdwn', text: `*Usage (no cap)* _(${uncappedLabel})_` } },
-        formatter.tableBlock(['resource', 'current'], rows),
-      ],
-    });
 
-    if (unlimited.length > formatter.TABLE_MAX_ROWS) {
-      await uploadCsv(client, channelId, ['resource', 'current'], unlimited.map((q) => ({
-        resource: q.name, current: String(q.current),
-      })), 'uncapped');
-    }
+    const uncappedBlocks = [
+      { type: 'section', text: { type: 'mrkdwn', text: `*Usage (no cap)* _(${uncappedLabel})_` } },
+      formatter.tableBlock(['resource', 'current'], rows),
+    ];
+
+    const allUncappedRows = unlimited.map((q) => ({
+      resource: q.name, current: String(q.current),
+    }));
+    await safeSay(say, uncappedBlocks, client, channelId, ['resource', 'current'], allUncappedRows, 'uncapped');
   }
 }
