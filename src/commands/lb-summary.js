@@ -74,6 +74,12 @@ async function renderLb(say, formatter, ns, name, lb, cached, durationMs) {
 
   const waf = spec.app_firewall ? spec.app_firewall.name : (spec.disable_waf ? 'Disabled' : 'None');
   const botDefense = spec.bot_defense ? 'Enabled' : 'Disabled';
+  const rateLimiting = spec.rate_limit
+    ? (spec.rate_limit.rate_limiter?.total_number
+      ? `${spec.rate_limit.rate_limiter.total_number} per ${(spec.rate_limit.rate_limiter?.unit || 'SECOND').toLowerCase()}`
+      : 'Configured')
+    : 'None';
+  const malUser = spec.enable_malicious_user_detection ? 'Enabled' : 'None';
   const pools = (spec.default_route_pools || []).map((p) => p.pool?.name).filter(Boolean);
   const routeCount = (spec.routes || []).length;
 
@@ -83,6 +89,8 @@ async function renderLb(say, formatter, ns, name, lb, cached, durationMs) {
     { label: 'Advertise', value: advertise },
     { label: 'WAF', value: waf },
     { label: 'Bot Defense', value: botDefense },
+    { label: 'Rate Limiting', value: rateLimiting },
+    { label: 'Malicious User', value: malUser },
     { label: 'Default Pools', value: pools.join(', ') || 'none' },
     { label: 'Routes', value: String(routeCount) },
   ];

@@ -52,6 +52,32 @@ describe('lb-summary', () => {
     expect(text).toContain('app.example.com');
     expect(text).toContain('prod-waf');
   });
+
+  test('shows rate limiting and malicious user fields', async () => {
+    const messages = [];
+    const tenant = mockTenant({
+      metadata: { name: 'my-lb' },
+      spec: {
+        domains: ['example.com'],
+        app_firewall: { name: 'my-waf' },
+        bot_defense: {},
+        rate_limit: { rate_limiter: { total_number: 100, unit: 'SECOND' } },
+        enable_malicious_user_detection: {},
+        default_route_pools: [],
+        routes: [],
+      },
+    });
+    await lbSummary.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'prod', resourceName: 'my-lb' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('Rate Limiting');
+    expect(text).toContain('Malicious User');
+  });
 });
 
 describe('cert-status', () => {
