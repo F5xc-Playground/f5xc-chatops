@@ -2,6 +2,7 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { log } = require('./logger');
 
 const MMDC_PATH = path.resolve(__dirname, '../../node_modules/.bin/mmdc');
 const PUPPETEER_CONFIG = path.resolve(__dirname, '../../puppeteer-config.json');
@@ -14,6 +15,7 @@ class DiagramRenderer {
     const outputPath = path.join(tmpDir, `xc-diagram-${Date.now()}.png`);
 
     fs.writeFileSync(inputPath, mermaidSyntax, 'utf-8');
+    log('info', 'Diagram render starting', { inputPath, outputPath, timeout });
 
     try {
       await new Promise((resolve, reject) => {
@@ -23,8 +25,10 @@ class DiagramRenderer {
           { timeout },
           (error, stdout, stderr) => {
             if (error) {
+              log('error', 'Diagram render failed', { error: error.message, stderr });
               reject(new Error(`Diagram render failed: ${error.message}\n${stderr}`));
             } else {
+              log('info', 'Diagram render complete', { outputPath });
               resolve();
             }
           }

@@ -12,7 +12,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY puppeteer-config.json ./
+COPY puppeteer-config.json .puppeteerrc.cjs ./
 COPY src/ src/
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \

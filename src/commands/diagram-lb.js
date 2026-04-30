@@ -1,3 +1,5 @@
+const { log } = require('../core/logger');
+
 function escapeLabel(str) {
   return String(str).replace(/\./g, '#46;').replace(/"/g, '#34;');
 }
@@ -226,19 +228,23 @@ module.exports = {
     const mermaid = buildMermaid(lb, pools);
     let outputPath;
     try {
+      log('info', 'Diagram render requested', { lb: name, namespace: ns, channelId: args._channelId });
       outputPath = await diagramRenderer.renderToFile(mermaid);
       const fs = require('fs');
       if (client) {
+        log('info', 'Uploading diagram', { lb: name, channelId: args._channelId });
         await client.files.uploadV2({
           file: fs.createReadStream(outputPath),
           filename: `${name}-diagram.png`,
           channel_id: args._channelId,
           initial_comment: `LB diagram: ${name} (${ns})`,
         });
+        log('info', 'Diagram uploaded', { lb: name });
       } else {
         await say(`Diagram rendered but file upload requires Slack client. Use a slash command or @mention.`);
       }
     } catch (err) {
+      log('error', 'Diagram failed', { lb: name, error: err.message });
       await say({ blocks: formatter.errorBlock(`Diagram render failed: ${err.message}. Try \`/xc-lb ${ns} ${name}\` for a text summary.`) });
     } finally {
       if (outputPath) diagramRenderer.cleanup(outputPath);

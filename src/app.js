@@ -8,6 +8,7 @@ const { NLPEngine } = require('./core/nlp-engine');
 const { DiagramRenderer } = require('./core/diagram-renderer');
 const formatter = require('./core/slack-formatter');
 const { loadCommands } = require('./loader');
+const { log } = require('./core/logger');
 
 const REQUIRED_VARS = ['F5XC_API_URL', 'F5XC_API_TOKEN', 'SLACK_BOT_TOKEN', 'SLACK_APP_TOKEN'];
 
@@ -31,11 +32,6 @@ function buildConfig(env) {
     nlpThreshold: parseFloat(env.NLP_THRESHOLD) || 0.75,
     port: parseInt(env.PORT, 10) || 3000,
   };
-}
-
-function log(level, message, data = {}) {
-  const entry = { timestamp: new Date().toISOString(), level, message, ...data };
-  console.log(JSON.stringify(entry));
 }
 
 function formatApiError(err, context) {
@@ -244,13 +240,13 @@ async function start() {
   });
 
   // Namespace selection handler
-  app.action(/^ns_select_/, async ({ action, ack, say, client }) => {
+  app.action(/^ns_select_/, async ({ action, ack, say, client, body }) => {
     await ack();
     const intent = action.action_id.replace('ns_select_', '');
     const namespace = action.selected_option.value;
     const mod = intentMap[intent];
     if (!mod) return;
-    const args = { namespace, fresh: false, raw: '' };
+    const args = { namespace, fresh: false, raw: '', _channelId: body.channel?.id || body.container?.channel_id };
     try {
       await mod.handler({ ...makeHandlerContext(say, client), args });
     } catch (err) {
@@ -259,12 +255,12 @@ async function start() {
   });
 
   // Resource picker button handler
-  app.action(/^res_pick_/, async ({ action, ack, say, client }) => {
+  app.action(/^res_pick_/, async ({ action, ack, say, client, body }) => {
     await ack();
     const { intent, namespace, resourceName } = JSON.parse(action.value);
     const mod = intentMap[intent];
     if (!mod) return;
-    const args = { namespace, resourceName, fresh: false, raw: '', _channelId: action.channel?.id };
+    const args = { namespace, resourceName, fresh: false, raw: '', _channelId: body.channel?.id || body.container?.channel_id };
     try {
       await mod.handler({ ...makeHandlerContext(say, client), args });
     } catch (err) {
@@ -273,7 +269,7 @@ async function start() {
   });
 
   // NLP suggestion button handler
-  app.action(/^suggest_/, async ({ action, ack, say, client }) => {
+  app.action(/^suggest_/, async ({ action, ack, say, client, body }) => {
     await ack();
     let intent, raw = '', entities = {};
     try {
@@ -295,6 +291,7 @@ async function start() {
       resourceType: entities.resourceType || null,
       fresh: false,
       raw,
+      _channelId: body.channel?.id || body.container?.channel_id,
     };
     try {
       await mod.handler({ ...makeHandlerContext(say, client), args });
