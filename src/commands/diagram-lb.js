@@ -26,8 +26,8 @@ function buildMermaid(lb, pools) {
   const domains = spec.domains || [];
   if (domains.length > 0) {
     const domId = id();
-    const domLabel = domains.map((d) => escapeLabel(d)).join('<br/>');
-    lines.push(`  ${domId}["Domains<br/>${domLabel}"]:::domain`);
+    const domLabel = domains.map((d) => `Domains: ${escapeLabel(d)}`).join('<br/>');
+    lines.push(`  ${domId}["${domLabel}"]:::domain`);
     lines.push(`  ${lastId} --> ${domId}`);
     lastId = domId;
   }
@@ -38,10 +38,10 @@ function buildMermaid(lb, pools) {
     const spId = id();
     let policyLabel;
     if (spec.active_service_policies?.policies?.length) {
-      const names = spec.active_service_policies.policies.map((p) => escapeLabel(p.name)).join('<br/>');
-      policyLabel = `Service Policies<br/>${names}`;
+      const names = spec.active_service_policies.policies.map((p) => `Service Policy: ${escapeLabel(p.name)}`).join('<br/>');
+      policyLabel = names;
     } else {
-      policyLabel = 'Service Policies<br/>namespace default';
+      policyLabel = 'Service Policies: namespace default';
     }
     lines.push(`  ${spId}["${policyLabel}"]:::security`);
     lines.push(`  ${lastId} --> ${spId}`);
@@ -51,10 +51,14 @@ function buildMermaid(lb, pools) {
   // Bot Defense — inline with policy name
   if (spec.bot_defense) {
     const bdId = id();
-    const bdParts = ['Bot Defense'];
-    if (spec.bot_defense.policy?.name) bdParts.push(escapeLabel(spec.bot_defense.policy.name));
-    if (spec.bot_defense.regional_endpoint) bdParts.push(`region: ${spec.bot_defense.regional_endpoint}`);
-    lines.push(`  ${bdId}["${bdParts.join('<br/>')}"]:::security`);
+    let bdLabel = 'Bot Defense';
+    if (spec.bot_defense.policy?.name) {
+      bdLabel += `: ${escapeLabel(spec.bot_defense.policy.name)}`;
+    } else {
+      bdLabel += ': Enabled';
+    }
+    if (spec.bot_defense.regional_endpoint) bdLabel += `<br/>Region: ${spec.bot_defense.regional_endpoint}`;
+    lines.push(`  ${bdId}["${bdLabel}"]:::security`);
     lines.push(`  ${lastId} --> ${bdId}`);
     lastId = bdId;
   }
@@ -62,7 +66,7 @@ function buildMermaid(lb, pools) {
   // Malicious User Detection
   if (spec.enable_malicious_user_detection) {
     const mudId = id();
-    lines.push(`  ${mudId}["Malicious User Detection"]:::security`);
+    lines.push(`  ${mudId}["Malicious User Detection: Enabled"]:::security`);
     lines.push(`  ${lastId} --> ${mudId}`);
     lastId = mudId;
   }
@@ -70,14 +74,14 @@ function buildMermaid(lb, pools) {
   // API Protection — with rule/group names
   if (spec.api_protection_rules) {
     const apId = id();
-    const apParts = ['API Protection'];
-    const groups = spec.api_protection_rules.api_groups_rules || [];
-    for (const g of groups) {
-      if (g.metadata?.name) apParts.push(escapeLabel(g.metadata.name));
+    const names = [];
+    for (const g of (spec.api_protection_rules.api_groups_rules || [])) {
+      if (g.metadata?.name) names.push(escapeLabel(g.metadata.name));
     }
     const apiGroup = spec.api_protection_rules.api_group || spec.api_protection_rules.api_specification;
-    if (apiGroup?.name) apParts.push(escapeLabel(apiGroup.name));
-    lines.push(`  ${apId}["${apParts.join('<br/>')}"]:::security`);
+    if (apiGroup?.name) names.push(escapeLabel(apiGroup.name));
+    const apLabel = names.length > 0 ? `API Protection: ${names.join(', ')}` : 'API Protection: Enabled';
+    lines.push(`  ${apId}["${apLabel}"]:::security`);
     lines.push(`  ${lastId} --> ${apId}`);
     lastId = apId;
   }
@@ -85,7 +89,7 @@ function buildMermaid(lb, pools) {
   // API Discovery
   if (spec.enable_api_discovery) {
     const adId = id();
-    lines.push(`  ${adId}["API Discovery"]:::security`);
+    lines.push(`  ${adId}["API Discovery: Enabled"]:::security`);
     lines.push(`  ${lastId} --> ${adId}`);
     lastId = adId;
   }
@@ -93,9 +97,10 @@ function buildMermaid(lb, pools) {
   // Data Guard — with rule names
   if (spec.data_guard_rules) {
     const dgId = id();
-    const dgParts = ['Data Guard'];
-    if (spec.data_guard_rules.metadata?.name) dgParts.push(escapeLabel(spec.data_guard_rules.metadata.name));
-    lines.push(`  ${dgId}["${dgParts.join('<br/>')}"]:::security`);
+    const dgLabel = spec.data_guard_rules.metadata?.name
+      ? `Data Guard: ${escapeLabel(spec.data_guard_rules.metadata.name)}`
+      : 'Data Guard: Enabled';
+    lines.push(`  ${dgId}["${dgLabel}"]:::security`);
     lines.push(`  ${lastId} --> ${dgId}`);
     lastId = dgId;
   }
@@ -103,9 +108,10 @@ function buildMermaid(lb, pools) {
   // Client-Side Defense — with policy name
   if (spec.client_side_defense) {
     const csdId = id();
-    const csdParts = ['Client-Side Defense'];
-    if (spec.client_side_defense.policy?.name) csdParts.push(escapeLabel(spec.client_side_defense.policy.name));
-    lines.push(`  ${csdId}["${csdParts.join('<br/>')}"]:::security`);
+    const csdLabel = spec.client_side_defense.policy?.name
+      ? `Client-Side Defense: ${escapeLabel(spec.client_side_defense.policy.name)}`
+      : 'Client-Side Defense: Enabled';
+    lines.push(`  ${csdId}["${csdLabel}"]:::security`);
     lines.push(`  ${lastId} --> ${csdId}`);
     lastId = csdId;
   }
