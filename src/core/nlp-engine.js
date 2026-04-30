@@ -105,93 +105,33 @@ class NLPEngine {
       normalized
     ).trim();
 
-    let classifyText = cleanText;
-    const lowerText = normalized;
-    for (const ns of this._namespaces) {
-      const nsLower = ns.toLowerCase();
-      if (nsLower.includes('-') && lowerText.includes(nsLower)) {
-        classifyText = classifyText.replace(new RegExp(ns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), 'prod').trim();
-      }
-    }
-
-    const result = await this._nlp.process('en', classifyText);
-
+    const lowerText = cleanText;
     const entities = {};
 
-    // Pass 1: explicit prepositional patterns (high confidence)
-    for (const ns of this._namespaces) {
-      const nsLower = ns.toLowerCase();
-      const nsPatterns = [
-        `in namespace ${nsLower}`,
-        `in ns ${nsLower}`,
-        `namespace ${nsLower}`,
-        `ns ${nsLower}`,
-        ` in ${nsLower}`,
-      ];
-      for (const pattern of nsPatterns) {
-        if (lowerText.includes(pattern)) {
-          entities.namespace = ns;
-          break;
-        }
-      }
-      if (entities.namespace) break;
-    }
+    // 1. Extract entities FIRST
+    this._extractNamespace(lowerText, entities);
+    this._extractResourceType(lowerText, entities);
 
-    // Pass 2: word-boundary fallback only if no prepositional match found
-    if (!entities.namespace) {
-      for (const ns of this._namespaces) {
-        const nsLower = ns.toLowerCase();
-        if (nsLower.length >= 4) {
-          const regex = new RegExp(`(?:^|\\s)${nsLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`);
-          if (regex.test(lowerText)) {
-            entities.namespace = ns;
-            break;
-          }
-        }
+    // 2. Build classification text: replace entities with placeholders
+    let classifyText = cleanText;
+    if (entities.namespace) {
+      const nsEsc = entities.namespace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      classifyText = classifyText.replace(new RegExp(`(in\\s+)?(namespace\\s+|ns\\s+)?(?<![\\w-])${nsEsc}(?![\\w-])`, 'gi'), ' prod ');
+    }
+    if (entities.resourceType) {
+      const rtEntry = this._resourceTypes.find((r) => r.name === entities.resourceType);
+      const rtNames = [entities.resourceType, ...(rtEntry?.synonyms || [])];
+      for (const name of rtNames) {
+        classifyText = classifyText.replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), ' ');
       }
     }
+    classifyText = classifyText.replace(/\s+/g, ' ').trim();
 
-    for (const rt of this._resourceTypes) {
-      const allNames = [rt.name, ...rt.synonyms].map((s) => s.toLowerCase());
-      for (const name of allNames) {
-        if (lowerText.includes(name)) {
-          entities.resourceType = rt.name;
-          break;
-        }
-      }
-      if (entities.resourceType) break;
-    }
+    // 3. Classify on cleaned skeleton
+    const result = await this._nlp.process('en', classifyText);
 
-    const FILLER = new Set([
-      'show', 'me', 'the', 'a', 'an', 'of', 'for', 'in', 'on', 'about',
-      'tell', 'get', 'check', 'list', 'all', 'my', 'is', 'are', 'what',
-      'how', 'do', 'does', 'which', 'can', 'has', 'have', 'any', 'that',
-      'load', 'balancer', 'balancers', 'lb', 'lbs', 'origin', 'pool',
-      'pools', 'diagram', 'status', 'waf', 'xc', 'namespace', 'ns',
-      'details', 'detail', 'describe', 'summary', 'summarize', 'config',
-      'configuration', 'service', 'policies', 'policy', 'firewall',
-      'blocking', 'monitoring', 'mode', 'using',
-      'bot', 'defense', 'protection',
-      'enabled', 'disabled', 'configured', 'attached', 'applied',
-    ]);
-
-    if (!entities.resourceName) {
-      let remaining = lowerText;
-      if (entities.namespace) {
-        const nsEsc = entities.namespace.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        remaining = remaining.replace(new RegExp(`(in\\s+)?(namespace\\s+|ns\\s+)?(?<![\\w-])${nsEsc}(?![\\w-])`, 'g'), ' ');
-      }
-      if (entities.resourceType) {
-        const rtNames = [entities.resourceType, ...this._resourceTypes.find((r) => r.name === entities.resourceType)?.synonyms || []];
-        for (const n of rtNames) {
-          remaining = remaining.replace(new RegExp(n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), ' ');
-        }
-      }
-      const candidates = remaining.split(/\s+/).filter((t) => t.length >= 3 && !FILLER.has(t) && /^[a-z0-9][\w-]*[a-z0-9]$/i.test(t));
-      if (candidates.length === 1) {
-        entities.resourceName = candidates[0];
-      }
-    }
+    // 4. Extract resourceName (post-classification, uses FILLER)
+    this._extractResourceName(lowerText, entities);
 
     // When NLP.js classifies as 'None', nluAnswer.classifications holds the real
     // per-intent scores (all 0 for gibberish). Use those for an honest confidence.
@@ -219,6 +159,84 @@ class NLPEngine {
       topIntents,
       raw: result,
     };
+  }
+
+  _extractNamespace(lowerText, entities) {
+    // Pass 1: explicit prepositional patterns (high confidence)
+    for (const ns of this._namespaces) {
+      const nsLower = ns.toLowerCase();
+      const nsPatterns = [
+        `in namespace ${nsLower}`,
+        `in ns ${nsLower}`,
+        `namespace ${nsLower}`,
+        `ns ${nsLower}`,
+        ` in ${nsLower}`,
+      ];
+      for (const pattern of nsPatterns) {
+        if (lowerText.includes(pattern)) {
+          entities.namespace = ns;
+          return;
+        }
+      }
+    }
+
+    // Pass 2: word-boundary fallback
+    for (const ns of this._namespaces) {
+      const nsLower = ns.toLowerCase();
+      if (nsLower.length >= 4) {
+        const regex = new RegExp(`(?:^|\\s)${nsLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`);
+        if (regex.test(lowerText)) {
+          entities.namespace = ns;
+          return;
+        }
+      }
+    }
+  }
+
+  _extractResourceType(lowerText, entities) {
+    for (const rt of this._resourceTypes) {
+      const allNames = [rt.name, ...rt.synonyms].map((s) => s.toLowerCase());
+      for (const name of allNames) {
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(?:^|[^\\w-])${escaped}(?:[^\\w-]|$)`);
+        if (regex.test(lowerText)) {
+          entities.resourceType = rt.name;
+          return;
+        }
+      }
+    }
+  }
+
+  _extractResourceName(lowerText, entities) {
+    const FILLER = new Set([
+      'show', 'me', 'the', 'a', 'an', 'of', 'for', 'in', 'on', 'about',
+      'tell', 'get', 'check', 'list', 'all', 'my', 'is', 'are', 'what',
+      'how', 'do', 'does', 'which', 'can', 'has', 'have', 'any', 'that',
+      'load', 'balancer', 'balancers', 'lb', 'lbs', 'origin', 'pool',
+      'pools', 'diagram', 'status', 'waf', 'xc', 'namespace', 'ns',
+      'details', 'detail', 'describe', 'summary', 'summarize', 'config',
+      'configuration', 'service', 'policies', 'policy', 'firewall',
+      'blocking', 'monitoring', 'mode', 'using',
+      'bot', 'defense', 'protection',
+      'enabled', 'disabled', 'configured', 'attached', 'applied',
+    ]);
+
+    let remaining = lowerText;
+    if (entities.namespace) {
+      const nsEsc = entities.namespace.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      remaining = remaining.replace(new RegExp(`(in\\s+)?(namespace\\s+|ns\\s+)?(?<![\\w-])${nsEsc}(?![\\w-])`, 'g'), ' ');
+    }
+    if (entities.resourceType) {
+      const rtEntry = this._resourceTypes.find((r) => r.name === entities.resourceType);
+      const rtNames = [entities.resourceType, ...(rtEntry?.synonyms || [])];
+      for (const n of rtNames) {
+        remaining = remaining.replace(new RegExp(n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), ' ');
+      }
+    }
+    const candidates = remaining.split(/\s+/).filter((t) => t.length >= 3 && !FILLER.has(t) && /^[a-z0-9][\w-]*[a-z0-9]$/i.test(t));
+    if (candidates.length === 1) {
+      entities.resourceName = candidates[0];
+    }
   }
 }
 

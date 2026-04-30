@@ -170,3 +170,57 @@ describe('NLPEngine — text normalization', () => {
     expect(result.intent).toBe('site.status');
   });
 });
+
+describe('NLPEngine — extraction-first flow', () => {
+  let engine;
+
+  beforeAll(async () => {
+    engine = new NLPEngine({ threshold: 0.75 });
+    engine.addIntents([
+      { utterance: 'what is in namespace prod', intent: 'namespace.summary' },
+      { utterance: 'summarize namespace staging', intent: 'namespace.summary' },
+      { utterance: 'namespace overview for prod', intent: 'namespace.summary' },
+      { utterance: 'show me a namespace summary for prod', intent: 'namespace.summary' },
+      { utterance: 'tell me about the load balancer in prod', intent: 'lb.summary' },
+      { utterance: 'show load balancer details', intent: 'lb.summary' },
+      { utterance: 'LB summary', intent: 'lb.summary' },
+      { utterance: 'describe the load balancer', intent: 'lb.summary' },
+      { utterance: 'is the WAF in blocking mode', intent: 'waf.status' },
+      { utterance: 'show WAF status', intent: 'waf.status' },
+      { utterance: 'what mode is the WAF in', intent: 'waf.status' },
+      { utterance: 'check bot defense', intent: 'bot.defense.status' },
+      { utterance: 'is bot defense enabled', intent: 'bot.defense.status' },
+      { utterance: 'bot defense status', intent: 'bot.defense.status' },
+    ]);
+    engine.addNamespaceEntities(['prod', 'demo-shop', 'staging', 'my-app-ns']);
+    engine.addResourceTypeEntities([
+      { name: 'http_loadbalancer', synonyms: ['load balancer', 'LB', 'lbs', 'load balancers'] },
+      { name: 'app_firewall', synonyms: ['WAF', 'firewall', 'app firewall'] },
+    ]);
+    await engine.train();
+  });
+
+  test('classifies with doubly-hyphenated namespace', async () => {
+    const result = await engine.process('what is in the my-app-ns namespace');
+    expect(result.intent).toBe('namespace.summary');
+    expect(result.entities.namespace).toBe('my-app-ns');
+  });
+
+  test('extracts LB name when namespace is a prefix of the LB name', async () => {
+    const result = await engine.process('tell me about the load balancer demo-shop-fe in demo-shop');
+    expect(result.entities.namespace).toBe('demo-shop');
+    expect(result.entities.resourceName).toBe('demo-shop-fe');
+  });
+
+  test('extracts LB name for WAF query with hyphenated namespace', async () => {
+    const result = await engine.process('is the WAF in blocking mode for my-app-lb in my-app-ns');
+    expect(result.entities.namespace).toBe('my-app-ns');
+    expect(result.entities.resourceName).toBe('my-app-lb');
+  });
+
+  test('does not extract namespace from within resource name', async () => {
+    const result = await engine.process('describe the load balancer prod-api-gateway in prod');
+    expect(result.entities.namespace).toBe('prod');
+    expect(result.entities.resourceName).toBe('prod-api-gateway');
+  });
+});
