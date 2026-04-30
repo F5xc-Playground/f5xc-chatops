@@ -156,7 +156,7 @@ docker run -d \
   -e SLACK_BOT_TOKEN=xoxb-your-token \
   -e SLACK_APP_TOKEN=xapp-your-token \
   -p 3000:3000 \
-  ghcr.io/f5xc-playground/f5xc-chatops:0.3
+  ghcr.io/f5xc-playground/f5xc-chatops:0.5
 ```
 
 ### Kubernetes
@@ -195,7 +195,7 @@ spec:
     spec:
       containers:
         - name: xc-chatops
-          image: ghcr.io/f5xc-playground/f5xc-chatops:0.3
+          image: ghcr.io/f5xc-playground/f5xc-chatops:0.5
           envFrom:
             - secretRef:
                 name: xc-chatops
