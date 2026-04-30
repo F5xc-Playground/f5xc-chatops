@@ -21,6 +21,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx jest --no-coverage
+      - name: Verify Slack manifest is up to date
+        run: |
+          npm run manifest
+          git diff --exit-code slack-manifest.json
 
   build:
     needs: test
