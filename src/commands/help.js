@@ -17,7 +17,10 @@ module.exports = {
     const query = (args.raw || '').trim();
 
     if (query && !query.includes(' ')) {
-      const cmd = commandRegistry.commands.find((c) => c.meta.name === query);
+      const q = query.replace(/^\//, '');
+      const cmd = commandRegistry.commands.find(
+        (c) => c.meta.name === q || c.meta.slashCommand === `/${q}`
+      );
       if (!cmd) {
         await say({ blocks: formatter.errorBlock(`Unknown command: "${query}". Try \`/xc-help\` to see all commands.`) });
         return;

@@ -124,6 +124,35 @@ describe('site-status handler', () => {
     expect(text).toContain('Customer Edge');
   });
 
+  test('delegates to site-detail when arg is a site name', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn().mockImplementation((path) => {
+          if (path.includes('/sites/my-site')) {
+            return Promise.resolve({
+              metadata: { name: 'my-site' },
+              spec: { site_type: 'CE' },
+              status: { connected_state: 'ONLINE' },
+            });
+          }
+          return Promise.resolve({ items: [] });
+        }),
+      },
+    };
+    await siteStatus.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { raw: 'my-site', resourceName: null },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('my-site');
+    expect(text).toContain('Site:');
+  });
+
   test('lists all sites with "all" filter', async () => {
     const messages = [];
     const tenant = {

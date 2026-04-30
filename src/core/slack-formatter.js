@@ -118,7 +118,12 @@ function htmlToMrkdwn(html) {
   text = text.replace(/<em>(.*?)<\/em>/gi, '_$1_');
   text = text.replace(/<i>(.*?)<\/i>/gi, '_$1_');
   text = text.replace(/<code>(.*?)<\/code>/gi, '`$1`');
-  text = text.replace(/<a\s+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '<$1|$2>');
+  const slackLinks = [];
+  text = text.replace(/<a\s+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (_, url, label) => {
+    const idx = slackLinks.length;
+    slackLinks.push(`<${url}|${label.trim() || url}>`);
+    return `\x00LINK${idx}\x00`;
+  });
   text = text.replace(/<hr\s*\/?>/gi, '---');
   text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_, items) => {
@@ -135,6 +140,7 @@ function htmlToMrkdwn(html) {
   );
   text = text.replace(/<\/?(?:p|div)[^>]*>/gi, '\n');
   text = text.replace(/<[^>]+>/g, '');
+  text = text.replace(/\x00LINK(\d+)\x00/g, (_, idx) => slackLinks[Number(idx)]);
   text = text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
   text = text.replace(/\n{3,}/g, '\n\n');
   return text.trim();

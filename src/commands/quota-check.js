@@ -33,7 +33,7 @@ module.exports = {
 
   entities: [],
 
-  handler: async ({ say, tenant, cache, args, formatter }) => {
+  handler: async ({ say, tenant, cache, args, formatter, client }) => {
     const cacheKey = `${tenant.name}:quotas`;
     let items;
     if (!args.fresh) {
@@ -60,7 +60,7 @@ module.exports = {
     }
 
     const { tier, search } = parseArgs(args.raw || '');
-    await renderQuotas(say, formatter, items, tier, search, !durationMs, durationMs);
+    await renderQuotas(say, formatter, items, tier, search, !durationMs, durationMs, client, args._channelId);
   },
 };
 
@@ -82,15 +82,6 @@ function parseArgs(raw) {
   return { tier, search: searchParts.join(' ') };
 }
 
-function getTier(current, maximum) {
-  if (maximum <= 0) return null;
-  const pct = (current / maximum) * 100;
-  if (pct >= 80) return 'critical';
-  if (pct >= 50) return 'warning';
-  return 'normal';
-}
-
-const MAX_DISPLAY = 40;
 
 function quotaIndicator(current, maximum) {
   if (maximum <= 0) return '';
@@ -100,7 +91,22 @@ function quotaIndicator(current, maximum) {
   return '';
 }
 
-async function renderQuotas(say, formatter, items, tier, search, cached, durationMs) {
+async function uploadCsv(client, channelId, columns, rows, label) {
+  if (!client || !channelId) return;
+  const csv = require('../core/slack-formatter').csvString(columns, rows);
+  try {
+    await client.files.uploadV2({
+      content: csv,
+      filename: `quota-${label}.csv`,
+      channel_id: channelId,
+      initial_comment: `Full quota data: ${rows.length} resources`,
+    });
+  } catch {
+    // best-effort
+  }
+}
+
+async function renderQuotas(say, formatter, items, tier, search, cached, durationMs, client, channelId) {
   if (items.length === 0) {
     await say({ blocks: formatter.errorBlock('No quota data found for this tenant.') });
     return;
@@ -133,7 +139,9 @@ async function renderQuotas(say, formatter, items, tier, search, cached, duratio
   blocks.push({ type: 'header', text: { type: 'plain_text', text: titleParts.join(' ') } });
 
   if (visible.length > 0) {
-    const rows = visible.slice(0, MAX_DISPLAY).map((q) => {
+    const displayed = visible.slice(0, formatter.TABLE_MAX_ROWS);
+    const overflow = visible.length > formatter.TABLE_MAX_ROWS;
+    const rows = displayed.map((q) => {
       const pct = Math.round((q.current / q.maximum) * 100);
       return {
         resource: q.name,
@@ -143,27 +151,48 @@ async function renderQuotas(say, formatter, items, tier, search, cached, duratio
       };
     });
 
-    const countLabel = visible.length > MAX_DISPLAY
-      ? `showing ${MAX_DISPLAY} of ${visible.length}`
+    const countLabel = overflow
+      ? `showing ${formatter.TABLE_MAX_ROWS} of ${visible.length}`
       : `${visible.length} resources`;
     blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*Quotas* _(${countLabel})_` } });
     blocks.push(formatter.tableBlock(['resource', 'usage', 'pct', 'status'], rows));
+
+    if (overflow) {
+      const allRows = visible.map((q) => {
+        const pct = Math.round((q.current / q.maximum) * 100);
+        return { resource: q.name, usage: `${q.current} / ${q.maximum}`, pct: `${pct}%` };
+      });
+      await uploadCsv(client, channelId, ['resource', 'usage', 'pct'], allRows, 'capped');
+    }
   } else if (capped.length > 0) {
     const tierLabel = tier || 'warning';
     blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `No quotas at ${tierLabel} level or above.` } });
   }
 
+  blocks.push(formatter.footer({ durationMs, cached }));
+  await say({ blocks });
+
   if (showAll && unlimited.length > 0) {
     unlimited.sort((a, b) => b.current - a.current);
-    const rows = unlimited.slice(0, MAX_DISPLAY).map((q) => ({
+    const displayed = unlimited.slice(0, formatter.TABLE_MAX_ROWS);
+    const rows = displayed.map((q) => ({
       resource: q.name,
       current: String(q.current),
     }));
-    blocks.push({ type: 'divider' });
-    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*Usage (no cap)* _(${unlimited.length} resources)_` } });
-    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: formatter.table(['resource', 'current'], rows) } });
-  }
+    const uncappedLabel = unlimited.length > formatter.TABLE_MAX_ROWS
+      ? `showing ${formatter.TABLE_MAX_ROWS} of ${unlimited.length}`
+      : `${unlimited.length} resources`;
+    await say({
+      blocks: [
+        { type: 'section', text: { type: 'mrkdwn', text: `*Usage (no cap)* _(${uncappedLabel})_` } },
+        formatter.tableBlock(['resource', 'current'], rows),
+      ],
+    });
 
-  blocks.push(formatter.footer({ durationMs, cached }));
-  await say({ blocks });
+    if (unlimited.length > formatter.TABLE_MAX_ROWS) {
+      await uploadCsv(client, channelId, ['resource', 'current'], unlimited.map((q) => ({
+        resource: q.name, current: String(q.current),
+      })), 'uncapped');
+    }
+  }
 }

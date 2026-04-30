@@ -85,6 +85,45 @@ describe('list-resources', () => {
     );
   });
 
+  test('single arg matching resource type is treated as type not namespace', async () => {
+    const messages = [];
+    const tenant = {
+      name: 'test',
+      client: {
+        get: jest.fn(),
+        post: jest.fn().mockResolvedValue({
+          http_loadbalancers: {
+            httplb_results: [{ name: 'lb1', namespace: 'prod', domains: [], waf_enforcement_mode: '' }],
+          },
+        }),
+      },
+    };
+    await listResources.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'http_loadbalancer', resourceName: null, resourceType: null, raw: 'http_loadbalancer' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('all namespaces');
+    expect(tenant.client.post).toHaveBeenCalled();
+  });
+
+  test('single arg matching non-inventory type prompts for namespace', async () => {
+    const messages = [];
+    const tenant = mockTenant({});
+    await listResources.handler({
+      say: (msg) => messages.push(msg),
+      tenant,
+      cache: new Cache(),
+      args: { namespace: 'app_firewall', resourceName: null, resourceType: null, raw: 'app_firewall' },
+      formatter,
+    });
+    const text = JSON.stringify(messages[0]);
+    expect(text).toContain('namespace');
+  });
+
   test('prompts for namespace for non-inventory types', async () => {
     const messages = [];
     const tenant = mockTenant({});
@@ -135,7 +174,7 @@ describe('quota-check', () => {
     expect(text).not.toContain('API Inventory');
   });
 
-  test('"all" shows quotas and uncapped usage', async () => {
+  test('"all" shows quotas and uncapped usage in separate messages', async () => {
     const messages = [];
     await quotaCheck.handler({
       say: (msg) => messages.push(msg),
@@ -144,10 +183,12 @@ describe('quota-check', () => {
       args: { raw: 'all' },
       formatter,
     });
-    const text = JSON.stringify(messages[0]);
-    expect(text).toContain('DNS Zone');
-    expect(text).toContain('API Inventory');
-    expect(text).toContain('no cap');
+    expect(messages.length).toBe(2);
+    const cappedText = JSON.stringify(messages[0]);
+    expect(cappedText).toContain('DNS Zone');
+    const uncappedText = JSON.stringify(messages[1]);
+    expect(uncappedText).toContain('API Inventory');
+    expect(uncappedText).toContain('no cap');
   });
 
   test('"critical" filters to 80%+', async () => {

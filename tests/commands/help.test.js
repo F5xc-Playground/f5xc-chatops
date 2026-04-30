@@ -145,6 +145,22 @@ describe('help handler — show detail for a specific command', () => {
     expect(text).toContain('who are you');
   });
 
+  test('accepts slash command name without leading slash', async () => {
+    const ctx = makeContext('xc-whoami');
+    await help.handler(ctx);
+    const { blocks } = ctx.say.mock.calls[0][0];
+    const header = blocks.find((b) => b.type === 'header');
+    expect(header.text.text).toContain('whoami');
+  });
+
+  test('accepts slash command name with leading slash', async () => {
+    const ctx = makeContext('/xc-whoami');
+    await help.handler(ctx);
+    const { blocks } = ctx.say.mock.calls[0][0];
+    const header = blocks.find((b) => b.type === 'header');
+    expect(header.text.text).toContain('whoami');
+  });
+
   test('returns error block for unknown command', async () => {
     const ctx = makeContext('nonexistent');
     await help.handler(ctx);

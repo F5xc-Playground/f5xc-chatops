@@ -23,6 +23,13 @@ module.exports = {
 
   handler: async ({ say, tenant, cache, args, formatter }) => {
     const filter = (args.resourceName || args.raw || '').trim().toLowerCase();
+
+    if (filter && filter !== 'ce' && filter !== 're' && filter !== 'all') {
+      const siteDetail = require('./site-detail');
+      await siteDetail.handler({ say, tenant, cache, args: { ...args, resourceName: filter, raw: filter }, formatter });
+      return;
+    }
+
     const mode = (filter === 're') ? 're' : (filter === 'all') ? 'all' : 'ce';
 
     const cacheKey = `${tenant.name}:sites:${mode}`;

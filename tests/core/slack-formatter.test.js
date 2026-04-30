@@ -113,6 +113,29 @@ describe('slack-formatter', () => {
     });
   });
 
+  describe('htmlToMrkdwn', () => {
+    test('converts anchor tags to Slack link format', () => {
+      const html = '<ul><li><a href="https://docs.example.com/rate-limiting">Configure Rate Limiting</a></li></ul>';
+      const result = fmt.htmlToMrkdwn(html);
+      expect(result).toContain('<https://docs.example.com/rate-limiting|Configure Rate Limiting>');
+    });
+
+    test('preserves links inside list items', () => {
+      const html = '<ul><li><a href="https://a.com">Link A</a></li><li><a href="https://b.com">Link B</a></li></ul>';
+      const result = fmt.htmlToMrkdwn(html);
+      expect(result).toContain('<https://a.com|Link A>');
+      expect(result).toContain('<https://b.com|Link B>');
+    });
+
+    test('converts bold, italic, code', () => {
+      const html = '<strong>bold</strong> <em>italic</em> <code>code</code>';
+      const result = fmt.htmlToMrkdwn(html);
+      expect(result).toContain('*bold*');
+      expect(result).toContain('_italic_');
+      expect(result).toContain('`code`');
+    });
+  });
+
   describe('namespacePicker', () => {
     test('renders external_select in actions block', () => {
       const blocks = fmt.namespacePicker('quota.check', ['system', 'prod', 'staging']);

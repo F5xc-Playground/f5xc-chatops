@@ -62,3 +62,36 @@ describe('NLPEngine', () => {
     expect(Array.isArray(result.topIntents)).toBe(true);
   });
 });
+
+describe('NLPEngine — hyphenated namespaces', () => {
+  let engine;
+
+  beforeAll(async () => {
+    engine = new NLPEngine({ threshold: 0.75 });
+    engine.addIntents([
+      { utterance: 'what is in namespace prod', intent: 'namespace.summary' },
+      { utterance: 'summarize namespace staging', intent: 'namespace.summary' },
+      { utterance: 'namespace overview for prod', intent: 'namespace.summary' },
+      { utterance: 'list all load balancers', intent: 'list.resources' },
+    ]);
+    engine.addNamespaceEntities(['prod', 'demo-shop', 'staging']);
+    await engine.train();
+  });
+
+  test('classifies intent with hyphenated namespace', async () => {
+    const result = await engine.process("what's in the demo-shop namespace");
+    expect(result.intent).toBe('namespace.summary');
+    expect(result.entities.namespace).toBe('demo-shop');
+  });
+
+  test('extracts hyphenated namespace entity', async () => {
+    const result = await engine.process('list all load balancers in demo-shop');
+    expect(result.entities.namespace).toBe('demo-shop');
+  });
+
+  test('extracts resource name from phrase with namespace', async () => {
+    const result = await engine.process('tell me about the load balancer demo-shop-fe in demo-shop');
+    expect(result.entities.namespace).toBe('demo-shop');
+    expect(result.entities.resourceName).toBe('demo-shop-fe');
+  });
+});

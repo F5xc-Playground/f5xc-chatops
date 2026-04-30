@@ -52,6 +52,14 @@ module.exports = {
   entities: [],
 
   handler: async ({ say, tenant, cache, args, formatter, client }) => {
+    if (args.namespace && !args.resourceName && !args.resourceType) {
+      const resolved = resolveResourceType(args.namespace);
+      if (RESOURCE_PATHS[resolved]) {
+        args.resourceType = resolved;
+        args.namespace = null;
+      }
+    }
+
     let resourceType = resolveResourceType(args.resourceType || args.resourceName || 'http_loadbalancer');
     const apiPath = RESOURCE_PATHS[resourceType];
 

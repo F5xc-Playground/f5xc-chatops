@@ -54,11 +54,18 @@ class NLPEngine {
       text
     ).trim();
 
-    const result = await this._nlp.process('en', cleanText);
+    let classifyText = cleanText;
+    const lowerText = text.toLowerCase();
+    for (const ns of this._namespaces) {
+      const nsLower = ns.toLowerCase();
+      if (nsLower.includes('-') && lowerText.includes(nsLower)) {
+        classifyText = classifyText.replace(new RegExp(ns.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '').trim();
+      }
+    }
+
+    const result = await this._nlp.process('en', classifyText);
 
     const entities = {};
-
-    const lowerText = text.toLowerCase();
 
     // Pass 1: explicit prepositional patterns (high confidence)
     for (const ns of this._namespaces) {
@@ -102,6 +109,33 @@ class NLPEngine {
         }
       }
       if (entities.resourceType) break;
+    }
+
+    const FILLER = new Set([
+      'show', 'me', 'the', 'a', 'an', 'of', 'for', 'in', 'on', 'about',
+      'tell', 'get', 'check', 'list', 'all', 'my', 'is', 'are', 'what',
+      'load', 'balancer', 'balancers', 'lb', 'lbs', 'origin', 'pool',
+      'pools', 'diagram', 'status', 'waf', 'xc', 'namespace', 'ns',
+      'details', 'detail', 'describe', 'summary', 'summarize', 'config',
+      'configuration', 'service', 'policies', 'policy', 'firewall',
+    ]);
+
+    if (!entities.resourceName) {
+      let remaining = lowerText;
+      if (entities.namespace) {
+        const nsEsc = entities.namespace.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        remaining = remaining.replace(new RegExp(`(in\\s+)?(namespace\\s+|ns\\s+)?(?<![\\w-])${nsEsc}(?![\\w-])`, 'g'), ' ');
+      }
+      if (entities.resourceType) {
+        const rtNames = [entities.resourceType, ...this._resourceTypes.find((r) => r.name === entities.resourceType)?.synonyms || []];
+        for (const n of rtNames) {
+          remaining = remaining.replace(new RegExp(n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), ' ');
+        }
+      }
+      const candidates = remaining.split(/\s+/).filter((t) => t.length >= 3 && !FILLER.has(t) && /^[a-z0-9][\w-]*[a-z0-9]$/i.test(t));
+      if (candidates.length === 1) {
+        entities.resourceName = candidates[0];
+      }
     }
 
     // When NLP.js classifies as 'None', nluAnswer.classifications holds the real
