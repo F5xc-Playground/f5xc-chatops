@@ -1,6 +1,6 @@
 {
   "name": "f5xc-chatops",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Slack ChatOps agent for F5 Distributed Cloud operational visibility",
   "main": "src/app.js",
   "scripts": {
