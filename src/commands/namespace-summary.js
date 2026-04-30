@@ -23,6 +23,7 @@ module.exports = {
   },
 
   intents: [
+    { utterance: 'namespace resource breakdown', intent: 'namespace.summary' },
     { utterance: 'summarize namespace prod', intent: 'namespace.summary' },
     { utterance: 'what is in namespace staging', intent: 'namespace.summary' },
     { utterance: 'what is in the prod namespace', intent: 'namespace.summary' },
@@ -33,6 +34,13 @@ module.exports = {
     { utterance: 'show me a namespace summary for prod', intent: 'namespace.summary' },
     { utterance: 'how many resources are in namespace prod', intent: 'namespace.summary' },
     { utterance: 'show me resource counts in staging', intent: 'namespace.summary' },
+    { utterance: 'break down namespace prod', intent: 'namespace.summary' },
+    { utterance: 'show me what is deployed in prod', intent: 'namespace.summary' },
+    { utterance: 'give me the namespace overview', intent: 'namespace.summary' },
+    { utterance: 'how much is in the prod namespace', intent: 'namespace.summary' },
+    { utterance: 'namespace resource summary and count breakdown', intent: 'namespace.summary' },
+    { utterance: 'summarize the namespace contents', intent: 'namespace.summary' },
+    { utterance: 'summarize namespace configuration', intent: 'namespace.summary' },
   ],
 
   entities: [],

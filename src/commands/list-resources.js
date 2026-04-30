@@ -36,9 +36,8 @@ module.exports = {
   intents: [
     { utterance: 'list all load balancers in prod', intent: 'list.resources' },
     { utterance: 'show me all origin pools in staging', intent: 'list.resources' },
-    { utterance: 'what resources are in namespace prod', intent: 'list.resources' },
     { utterance: 'list certificates in prod', intent: 'list.resources' },
-    { utterance: 'show WAF policies in staging', intent: 'list.resources' },
+    { utterance: 'list WAF policies in staging', intent: 'list.resources' },
     { utterance: 'show me all WAF policies', intent: 'list.resources' },
     { utterance: 'list all firewalls', intent: 'list.resources' },
     { utterance: 'list app firewalls', intent: 'list.resources' },
@@ -47,6 +46,10 @@ module.exports = {
     { utterance: 'list rate limiters', intent: 'list.resources' },
     { utterance: 'list all load balancers', intent: 'list.resources' },
     { utterance: 'show me all LBs', intent: 'list.resources' },
+    { utterance: 'view the full resource inventory', intent: 'list.resources' },
+    { utterance: 'what LBs are configured', intent: 'list.resources' },
+    { utterance: 'how many load balancers are deployed', intent: 'list.resources' },
+    { utterance: 'show me all resources of type origin pool', intent: 'list.resources' },
   ],
 
   entities: [],

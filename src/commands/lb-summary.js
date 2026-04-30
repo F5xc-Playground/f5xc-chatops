@@ -8,14 +8,22 @@ module.exports = {
   },
 
   intents: [
+    { utterance: 'tell me about my-lb', intent: 'lb.summary' },
+    { utterance: 'what routes are on the LB', intent: 'lb.summary' },
     { utterance: 'tell me about the load balancer', intent: 'lb.summary' },
     { utterance: 'show load balancer details', intent: 'lb.summary' },
     { utterance: 'LB summary', intent: 'lb.summary' },
     { utterance: 'describe the load balancer', intent: 'lb.summary' },
     { utterance: 'what is configured on the LB', intent: 'lb.summary' },
     { utterance: 'show me details for my-lb in prod', intent: 'lb.summary' },
-    { utterance: 'summarize load balancer demo-shop-fe', intent: 'lb.summary' },
+    { utterance: 'review the configuration of demo-shop-fe', intent: 'lb.summary' },
     { utterance: 'show me the config of the load balancer', intent: 'lb.summary' },
+    { utterance: 'give me the LB detail', intent: 'lb.summary' },
+    { utterance: 'what domains are on the load balancer', intent: 'lb.summary' },
+    { utterance: 'what pools does the LB use', intent: 'lb.summary' },
+    { utterance: 'show me the LB configuration', intent: 'lb.summary' },
+    { utterance: 'load balancer overview', intent: 'lb.summary' },
+    { utterance: 'tell me about the virtual hosting and routing setup', intent: 'lb.summary' },
   ],
 
   entities: [],
