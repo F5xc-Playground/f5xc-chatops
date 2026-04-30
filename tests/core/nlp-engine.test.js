@@ -223,4 +223,22 @@ describe('NLPEngine — extraction-first flow', () => {
     expect(result.entities.namespace).toBe('prod');
     expect(result.entities.resourceName).toBe('prod-api-gateway');
   });
+
+  test('extracts LB name for rate limit query', async () => {
+    const result = await engine.process('is rate limiting enabled on demo-shop-fe in demo-shop');
+    expect(result.entities.namespace).toBe('demo-shop');
+    expect(result.entities.resourceName).toBe('demo-shop-fe');
+  });
+
+  test('extracts LB name for malicious user query', async () => {
+    const result = await engine.process('check MUD on demo-shop-fe in demo-shop');
+    expect(result.entities.namespace).toBe('demo-shop');
+    expect(result.entities.resourceName).toBe('demo-shop-fe');
+  });
+
+  test('extracts LB name for security posture query', async () => {
+    const result = await engine.process('what security is on demo-shop-fe in demo-shop');
+    expect(result.entities.namespace).toBe('demo-shop');
+    expect(result.entities.resourceName).toBe('demo-shop-fe');
+  });
 });

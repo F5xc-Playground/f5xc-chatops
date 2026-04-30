@@ -219,6 +219,10 @@ class NLPEngine {
       'blocking', 'monitoring', 'mode', 'using',
       'bot', 'defense', 'protection',
       'enabled', 'disabled', 'configured', 'attached', 'applied',
+      'rate', 'limit', 'limiting', 'limiter', 'throttle', 'throttling', 'rps',
+      'malicious', 'user', 'mud', 'mum', 'mal', 'bad', 'actor', 'detection', 'mitigation',
+      'posture', 'secure', 'secured', 'hardened', 'audit', 'controls', 'features',
+      'security', 'overview',
     ]);
 
     let remaining = lowerText;

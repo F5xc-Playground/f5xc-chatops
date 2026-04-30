@@ -51,6 +51,15 @@ Every slash command also works as a natural language query — @mention the bot 
 `/xc-bot <namespace> <lb>` — Bot defense status
 > *"is bot defense enabled"* · *"check bot defense"*
 
+`/xc-ratelimit <namespace> <lb>` — Rate limiting configuration
+> *"is rate limiting enabled"* · *"show me the rate limit on my LB"*
+
+`/xc-maluser <namespace> <lb>` — Malicious user detection/mitigation
+> *"is MUD enabled"* · *"check malicious user detection"* · *"mal user status"*
+
+`/xc-security <namespace> <lb>` — Security posture summary (all controls at a glance)
+> *"what security is on this LB"* · *"security posture for my load balancer"*
+
 `/xc-api-sec <namespace>` — API discovery and protection per LB
 > *"api security status"* · *"are there any shadow APIs"*
 
