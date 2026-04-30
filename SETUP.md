@@ -2,29 +2,68 @@
 
 This walks through creating a Slack app, generating an F5 XC API token, and running the bot.
 
-## 1. Create the Slack App
+## 1. Create the Slack App (Manifest)
+
+The fastest way to set up the Slack app is with the generated manifest. It configures everything — slash commands, scopes, event subscriptions, and Socket Mode — in one step.
+
+1. Generate the manifest from the current command set:
+
+```bash
+npm run manifest
+```
+
+This reads every command file in `src/commands/` and writes `slack-manifest.json` with all slash commands, scopes, and events pre-configured. Run this again whenever you add or remove commands.
+
+2. Go to [https://api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**
+3. Choose **From an app manifest**
+4. Pick your workspace
+5. Paste the contents of `slack-manifest.json`
+6. Click **Create**
+
+### Get your tokens
+
+After creating the app:
+
+1. Go to **Settings > Basic Information > App-Level Tokens**
+2. Click **Generate Token and Scopes**, name it `socket`, add the `connections:write` scope
+3. Copy the token that starts with `xapp-` — this is your `SLACK_APP_TOKEN`
+4. Go to **OAuth & Permissions** and click **Install to Workspace**
+5. Copy the **Bot User OAuth Token** that starts with `xoxb-` — this is your `SLACK_BOT_TOKEN`
+
+### Updating an existing app
+
+If the app already exists and you've added new commands, regenerate the manifest and apply it:
+
+```bash
+npm run manifest
+```
+
+Then in **Settings > App Manifest**, paste the updated JSON and click **Save Changes**. Slack will show a diff of what changed.
+
+**Important:** The manifest is the single source of truth. Once you use it, make all changes through the manifest (by editing command files and re-running `npm run manifest`), not through the Slack UI. Manual UI edits will be overwritten the next time the manifest is applied.
+
+### Manual setup (alternative)
+
+<details>
+<summary>Click to expand manual setup steps</summary>
+
+If you prefer to configure the Slack app manually instead of using the manifest:
+
+**Create the app:**
 
 1. Go to [https://api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**
 2. Choose **From scratch**
 3. Name it whatever you like (e.g. `XC Bot`) and pick your workspace
 4. Click **Create App**
 
-## 2. Enable Socket Mode
-
-Socket Mode lets the bot connect to Slack over a WebSocket instead of requiring a public URL. This is what makes it easy to run from anywhere.
+**Enable Socket Mode:**
 
 1. In the left sidebar, go to **Socket Mode**
 2. Toggle **Enable Socket Mode** on
-3. You'll be prompted to create an app-level token — name it `socket` (or anything)
-4. Under **Scopes**, add `connections:write`
-5. Click **Generate**
-6. Copy the token that starts with `xapp-` — this is your `SLACK_APP_TOKEN`
+3. Create an app-level token — name it `socket`, add `connections:write` scope
+4. Copy the `xapp-` token — this is your `SLACK_APP_TOKEN`
 
-## 3. Set Bot Token Scopes
-
-1. In the left sidebar, go to **OAuth & Permissions**
-2. Scroll down to **Scopes > Bot Token Scopes**
-3. Add these scopes:
+**Set bot token scopes** (OAuth & Permissions > Bot Token Scopes):
 
 | Scope | What it's for |
 |-------|--------------|
@@ -35,69 +74,23 @@ Socket Mode lets the bot connect to Slack over a WebSocket instead of requiring 
 | `im:history` | Read DMs sent to the bot |
 | `reactions:read` | Capture thumbs-up/down feedback on AI responses |
 
-4. Scroll up and click **Install to Workspace** (or **Reinstall** if already installed)
-5. Authorize the app
-6. Copy the **Bot User OAuth Token** that starts with `xoxb-` — this is your `SLACK_BOT_TOKEN`
+Install to workspace and copy the `xoxb-` token — this is your `SLACK_BOT_TOKEN`.
 
-## 4. Register Slash Commands
+**Register slash commands** (Slash Commands > Create New Command for each):
 
-1. In the left sidebar, go to **Slash Commands**
-2. Click **Create New Command** for each command below
+Set the Request URL to `https://localhost` (Socket Mode ignores it). Run `npm run manifest` and check `slack-manifest.json` for the current list of commands and descriptions, or register whichever subset you want.
 
-For every command, set the **Request URL** to anything (Socket Mode ignores it, but the field is required — `https://localhost` works). Fill in the **Command** and **Short Description**:
+**Subscribe to events** (Event Subscriptions > Subscribe to bot events):
 
-| Command | Short Description |
-|---------|------------------|
-| `/xc-help` | List all commands |
-| `/xc-whoami` | Bot identity and access |
-| `/xc-ns` | Namespace summary |
-| `/xc-list` | List resources by type |
-| `/xc-lb` | Load balancer detail |
-| `/xc-diagram` | LB chain diagram |
-| `/xc-certs` | Certificate expiration scan |
-| `/xc-origins` | Origin pool servers |
-| `/xc-waf` | WAF status |
-| `/xc-policies` | Service policies on an LB |
-| `/xc-bot` | Bot defense status |
-| `/xc-api-sec` | API security status |
-| `/xc-event` | Explain a security event |
-| `/xc-quota` | Tenant quota utilization |
-| `/xc-ask` | Ask the AI Assistant |
-| `/xc-suggest` | AI LB suggestions |
-| `/xc-sites` | CE sites (use `re` or `all` for more) |
-| `/xc-site` | Single site detail |
-| `/xc-dns` | DNS zones |
-| `/xc-alerts` | Active firing alerts |
-| `/xc-ratelimit` | Rate limiting status |
-| `/xc-maluser` | Malicious user detection status |
-| `/xc-security` | Security posture summary |
+`app_mention`, `message.im`, `reaction_added`
 
-You don't have to register all of them — the bot works with whatever subset you add. Natural language queries (@mentions and DMs) work regardless of which slash commands are registered.
+**Allow DMs** (App Home > Messages Tab > on, allow slash commands and messages)
 
-## 5. Subscribe to Events
+</details>
 
-1. In the left sidebar, go to **Event Subscriptions**
-2. Toggle **Enable Events** on
-3. Under **Subscribe to bot events**, add:
+You don't have to register all slash commands — the bot works with whatever subset you add. Natural language queries (@mentions and DMs) work regardless of which slash commands are registered.
 
-| Event | What it's for |
-|-------|--------------|
-| `app_mention` | Respond to @mentions in channels |
-| `message.im` | Respond to direct messages |
-| `reaction_added` | Capture feedback reactions on AI responses |
-
-4. Click **Save Changes**
-
-## 6. Allow DMs (Optional but Recommended)
-
-1. In the left sidebar, go to **App Home**
-2. Scroll to **Show Tabs**
-3. Toggle **Messages Tab** on
-4. Check **Allow users to send Slash commands and messages from the messages tab**
-
-This lets users DM the bot directly with natural language queries.
-
-## 7. Create an F5 XC API Token
+## 2. Create an F5 XC API Token
 
 1. Log into your F5 Distributed Cloud console
 2. Click your profile icon (top right) > **Account Settings**
@@ -112,7 +105,7 @@ This lets users DM the bot directly with natural language queries.
 
 Your `F5XC_API_URL` is your tenant console URL, e.g. `https://acme.console.ves.volterra.io`.
 
-## 8. Environment Variables
+## 3. Environment Variables
 
 The bot is configured entirely through environment variables. How you provide them depends on your deployment method.
 
@@ -135,7 +128,7 @@ The bot is configured entirely through environment variables. How you provide th
 | `NLP_THRESHOLD` | `0.75` | Confidence threshold for natural language intent matching |
 | `PORT` | `3000` | Health endpoint port |
 
-## 9. Run the Bot
+## 4. Run the Bot
 
 ### Docker Compose
 

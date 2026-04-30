@@ -1,0 +1,161 @@
+{
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "XC Bot",
+    "description": "Operational visibility into F5 Distributed Cloud",
+    "background_color": "#1a1a2e"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "XC Bot",
+      "always_online": true
+    },
+    "slash_commands": [
+      {
+        "command": "/xc-alerts",
+        "description": "Active alerts firing on the tenant or a specific namespace",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-api-sec",
+        "description": "API discovery and protection status",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-ask",
+        "description": "Ask the XC AI Assistant a free-form question",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-bot",
+        "description": "Bot defense configuration status per LB",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-certs",
+        "description": "Certificate expiration status across LBs in a namespace",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-diagram",
+        "description": "Generate a visual diagram of an LB chain",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-dns",
+        "description": "List DNS zones and GSLB status",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-event",
+        "description": "Explain a security event by support ID via AI Assistant",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-help",
+        "description": "List all commands or get detail on a specific command",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-lb",
+        "description": "Detailed view of a single load balancer",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-list",
+        "description": "List resources of a given type in a namespace",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-maluser",
+        "description": "Malicious user detection and mitigation status per LB",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-ns",
+        "description": "Resource counts and health overview for a namespace",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-origins",
+        "description": "Configured origin servers for an origin pool",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-policies",
+        "description": "List service policies attached to a load balancer",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-quota",
+        "description": "Check XC tenant quota and usage limits",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-ratelimit",
+        "description": "Rate limiting configuration on a load balancer",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-security",
+        "description": "Summary of all security controls on a load balancer",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-site",
+        "description": "Detailed view of a single site",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-sites",
+        "description": "List sites with connectivity status (CE by default)",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-suggest",
+        "description": "Ask the AI Assistant for LB optimization suggestions",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-waf",
+        "description": "WAF policy details for a load balancer",
+        "should_escape": false
+      },
+      {
+        "command": "/xc-whoami",
+        "description": "Show bot identity, accessible namespaces, and roles",
+        "should_escape": false
+      }
+    ]
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "chat:write",
+        "commands",
+        "files:write",
+        "app_mentions:read",
+        "im:history",
+        "reactions:read"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "bot_events": [
+        "app_mention",
+        "message.im",
+        "reaction_added"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": true,
+    "token_rotation_enabled": false
+  }
+}
