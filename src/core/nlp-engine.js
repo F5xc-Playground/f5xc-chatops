@@ -118,13 +118,6 @@ class NLPEngine {
       const nsEsc = entities.namespace.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       classifyText = classifyText.replace(new RegExp(`(in\\s+)?(namespace\\s+|ns\\s+)?(?<![\\w-])${nsEsc}(?![\\w-])`, 'gi'), ' prod ');
     }
-    if (entities.resourceType) {
-      const rtEntry = this._resourceTypes.find((r) => r.name === entities.resourceType);
-      const rtNames = [entities.resourceType, ...(rtEntry?.synonyms || [])];
-      for (const name of rtNames) {
-        classifyText = classifyText.replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), ' ');
-      }
-    }
     classifyText = classifyText.replace(/\s+/g, ' ').trim();
 
     // 3. Classify on cleaned skeleton
@@ -223,6 +216,7 @@ class NLPEngine {
       'malicious', 'user', 'mud', 'mum', 'mal', 'bad', 'actor', 'detection', 'mitigation',
       'posture', 'secure', 'secured', 'hardened', 'audit', 'controls', 'features',
       'security', 'overview',
+      'site', 'sites', 'edge', 'customer', 'regional', 'connectivity', 'online', 'offline',
     ]);
 
     let remaining = lowerText;
