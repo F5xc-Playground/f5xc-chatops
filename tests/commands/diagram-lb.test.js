@@ -26,14 +26,15 @@ describe('diagram-lb', () => {
     expect(diagramLb.intents.length).toBeGreaterThanOrEqual(3);
   });
 
-  test('buildMermaid generates valid mermaid syntax from LB data', () => {
+  test('buildMermaid generates inline traffic-flow diagram', () => {
     const lb = {
       metadata: { name: 'test-lb' },
       spec: {
         domains: ['app.example.com'],
         advertise_on_public_default_vip: {},
         app_firewall: { name: 'prod-waf' },
-        disable_bot_defense: {},
+        active_service_policies: { policies: [{ name: 'block-bots' }] },
+        bot_defense: { regional_endpoint: 'US' },
         default_route_pools: [
           { pool: { name: 'pool-1', namespace: 'prod' } },
         ],
@@ -44,7 +45,7 @@ describe('diagram-lb', () => {
       'pool-1': {
         spec: {
           origin_servers: [
-            { public_ip: { ip: '10.0.0.1' } },
+            { public_ip: { ip: '10.0.0.1' }, site_locator: { site: { name: 'site-1' } } },
           ],
         },
       },
@@ -52,9 +53,50 @@ describe('diagram-lb', () => {
     const mermaid = diagramLb.buildMermaid(lb, pools);
     expect(mermaid).toContain('graph TD');
     expect(mermaid).toContain('test-lb');
+    expect(mermaid).toContain('Public HTTP LB');
+    expect(mermaid).toContain('app#46;example#46;com');
+    expect(mermaid).toContain('Service Policies');
+    expect(mermaid).toContain('block-bots');
+    expect(mermaid).toContain('Bot Defense');
+    expect(mermaid).toContain('prod-waf');
+    expect(mermaid).toContain(':::waf');
     expect(mermaid).toContain('pool-1');
     expect(mermaid).toContain('10#46;0#46;0#46;1');
-    expect(mermaid).toContain('prod-waf');
+    expect(mermaid).toContain('public');
+    expect(mermaid).toContain('site-1');
+
+    // Verify inline chain: each security node connects to the next, not as a side branch
+    const nodeLines = mermaid.split('\n').filter((l) => l.includes(' --> '));
+    const chain = nodeLines.map((l) => l.trim());
+    // User → LB → Domain → Service Policies → Bot Defense → WAF → Routes
+    expect(chain.length).toBeGreaterThanOrEqual(7);
+    expect(mermaid).not.toContain('subgraph');
+  });
+
+  test('buildMermaid flags missing WAF on public LB', () => {
+    const lb = {
+      metadata: { name: 'no-waf-lb' },
+      spec: {
+        advertise_on_public_default_vip: {},
+        default_route_pools: [],
+        routes: [],
+      },
+    };
+    const mermaid = diagramLb.buildMermaid(lb, {});
+    expect(mermaid).toContain('WAF: NONE');
+    expect(mermaid).toContain(':::wafMissing');
+  });
+
+  test('buildMermaid omits WAF warning on private LB', () => {
+    const lb = {
+      metadata: { name: 'private-lb' },
+      spec: {
+        default_route_pools: [],
+        routes: [],
+      },
+    };
+    const mermaid = diagramLb.buildMermaid(lb, {});
+    expect(mermaid).not.toContain('WAF: NONE');
   });
 
   test('prompts for namespace when missing', async () => {
