@@ -22,6 +22,9 @@ module.exports = {
     { utterance: 'investigate this blocked request', intent: 'security.event' },
     { utterance: 'look up security event by id', intent: 'security.event' },
     { utterance: 'explain support id abc-123', intent: 'security.event' },
+    { utterance: 'tell me about request abc-123', intent: 'security.event' },
+    { utterance: 'tell me about this request id', intent: 'security.event' },
+    { utterance: 'what happened to request abc-123', intent: 'security.event' },
   ],
 
   entities: [],

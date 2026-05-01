@@ -83,10 +83,51 @@ describe('NLP intent coverage', () => {
     { phrase: 'any certs expiring soon', expected: 'cert.status' },
     { phrase: 'are the origins healthy', expected: 'origin.health' },
     { phrase: 'what namespaces can you see', expected: 'whoami' },
+    { phrase: 'tell me about request abc-123', expected: 'security.event' },
+    { phrase: 'look up request id xyz-456', expected: 'security.event' },
+    { phrase: 'explain security event abc-123', expected: 'security.event' },
   ];
 
   test.each(SMOKE_PHRASES)('$phrase → $expected', async ({ phrase, expected }) => {
     const result = await engine.process(phrase);
     expect(result.intent).toBe(expected);
+  });
+
+  const NO_NAMESPACE_COMMANDS = [
+    'security-event',
+    'ai-query',
+    'quota-check',
+    'alert-status',
+    'site-status',
+    'site-detail',
+    'whoami',
+    'help',
+  ];
+
+  test('commands that should not require namespace do not call namespacePicker', () => {
+    for (const cmdName of NO_NAMESPACE_COMMANDS) {
+      const cmd = commands.find((c) => c.meta.name === cmdName);
+      if (!cmd) continue;
+      const src = cmd.handler.toString();
+      expect(src).not.toMatch(/namespacePicker/);
+    }
+  });
+
+  const NAMESPACE_REQUIRED_COMMANDS = [
+    'lb-summary',
+    'namespace-summary',
+    'waf-status',
+    'bot-defense-status',
+    'diagram-lb',
+    'list-resources',
+  ];
+
+  test('commands that require namespace call namespacePicker when missing', () => {
+    for (const cmdName of NAMESPACE_REQUIRED_COMMANDS) {
+      const cmd = commands.find((c) => c.meta.name === cmdName);
+      if (!cmd) continue;
+      const src = cmd.handler.toString();
+      expect(src).toMatch(/namespacePicker/);
+    }
   });
 });
