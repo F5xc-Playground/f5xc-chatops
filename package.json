@@ -1,6 +1,6 @@
 {
   "name": "f5xc-chatops",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "Slack ChatOps agent for F5 Distributed Cloud operational visibility",
   "main": "src/app.js",
   "scripts": {
@@ -22,11 +22,12 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@mermaid-js/mermaid-cli": "^11.12.0",
+    "@hpcc-js/wasm-graphviz": "^1.21.4",
     "@nlpjs/core": "^5.0.0-alpha.5",
     "@nlpjs/lang-en": "^5.0.0-alpha.5",
     "@nlpjs/nlp": "^5.0.0-alpha.5",
-    "@slack/bolt": "^4.7.1"
+    "@slack/bolt": "^4.7.1",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "jest": "^30.3.0",

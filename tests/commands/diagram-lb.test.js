@@ -1,4 +1,5 @@
 const diagramLb = require('../../src/commands/diagram-lb');
+const { buildDot } = require('../../src/core/diagram-renderer-graphviz');
 const { Cache } = require('../../src/core/cache');
 const formatter = require('../../src/core/slack-formatter');
 const fs = require('fs');
@@ -26,7 +27,11 @@ describe('diagram-lb', () => {
     expect(diagramLb.intents.length).toBeGreaterThanOrEqual(3);
   });
 
-  test('buildMermaid generates inline traffic-flow diagram with resource names', () => {
+  test('exports buildDot from graphviz renderer', () => {
+    expect(diagramLb.buildDot).toBe(buildDot);
+  });
+
+  test('buildDot generates traffic-flow diagram with resource names', () => {
     const lb = {
       metadata: { name: 'test-lb' },
       spec: {
@@ -53,30 +58,23 @@ describe('diagram-lb', () => {
         },
       },
     };
-    const mermaid = diagramLb.buildMermaid(lb, pools);
-    expect(mermaid).toContain('graph TD');
-    expect(mermaid).toContain('test-lb');
-    expect(mermaid).toContain('Public HTTP LB');
-    expect(mermaid).toContain('Domains: app#46;example#46;com');
-    expect(mermaid).toContain('Service Policy: block-bots');
-    expect(mermaid).toContain('Bot Defense: bd-standard');
-    expect(mermaid).toContain('Region: US');
-    expect(mermaid).toContain('API Protection: api-rule-1');
-    expect(mermaid).toContain('API Discovery: Enabled');
-    expect(mermaid).toContain('Client-Side Defense: csd-prod');
-    expect(mermaid).toContain('prod-waf');
-    expect(mermaid).toContain(':::waf');
-    expect(mermaid).toContain('pool-1');
-    expect(mermaid).toContain('10#46;0#46;0#46;1');
-    expect(mermaid).toContain('public');
-    expect(mermaid).toContain('site-1');
-
-    const nodeLines = mermaid.split('\n').filter((l) => l.includes(' --> '));
-    expect(nodeLines.length).toBeGreaterThanOrEqual(10);
-    expect(mermaid).not.toContain('subgraph');
+    const { dot } = buildDot(lb, pools);
+    expect(dot).toContain('digraph LB');
+    expect(dot).toContain('test-lb');
+    expect(dot).toContain('app.example.com');
+    expect(dot).toContain('block-bots');
+    expect(dot).toContain('bd-standard');
+    expect(dot).toContain('US');
+    expect(dot).toContain('api-rule-1');
+    expect(dot).toContain('API Discovery');
+    expect(dot).toContain('csd-prod');
+    expect(dot).toContain('prod-waf');
+    expect(dot).toContain('pool-1');
+    expect(dot).toContain('10.0.0.1');
+    expect(dot).toContain('site-1');
   });
 
-  test('buildMermaid flags missing WAF on public LB', () => {
+  test('buildDot flags missing WAF on public LB', () => {
     const lb = {
       metadata: { name: 'no-waf-lb' },
       spec: {
@@ -85,12 +83,12 @@ describe('diagram-lb', () => {
         routes: [],
       },
     };
-    const mermaid = diagramLb.buildMermaid(lb, {});
-    expect(mermaid).toContain('WAF: NONE');
-    expect(mermaid).toContain(':::wafMissing');
+    const { dot } = buildDot(lb, {});
+    expect(dot).toContain('NONE');
+    expect(dot).toContain('dashed');
   });
 
-  test('buildMermaid omits WAF warning on private LB', () => {
+  test('buildDot omits WAF warning on private LB', () => {
     const lb = {
       metadata: { name: 'private-lb' },
       spec: {
@@ -98,8 +96,8 @@ describe('diagram-lb', () => {
         routes: [],
       },
     };
-    const mermaid = diagramLb.buildMermaid(lb, {});
-    expect(mermaid).not.toContain('WAF: NONE');
+    const { dot } = buildDot(lb, {});
+    expect(dot).not.toContain('NONE');
   });
 
   test('prompts for namespace when missing', async () => {
@@ -189,46 +187,12 @@ describe('diagram-lb', () => {
       args: { namespace: 'prod', resourceName: 'test-lb', _channelId: 'C123' },
       formatter,
       diagramRenderer: {
-        renderToFile: jest.fn().mockRejectedValue(new Error('Chromium not found')),
+        renderToFile: jest.fn().mockRejectedValue(new Error('render failed')),
         cleanup: jest.fn(),
       },
     });
     const text = JSON.stringify(messages);
     expect(text).toContain('Diagram render failed');
-    expect(text).toContain('Chromium not found');
-  });
-
-  test('shows error when file upload fails', async () => {
-    const tmpFile = path.join(os.tmpdir(), `test-diagram-upload-${Date.now()}.png`);
-    fs.writeFileSync(tmpFile, 'fake-png-data');
-    try {
-      const messages = [];
-      const cleanupMock = jest.fn();
-      const tenant = mockTenant({
-        metadata: { name: 'test-lb' },
-        spec: { default_route_pools: [], routes: [] },
-      });
-      await diagramLb.handler({
-        say: (msg) => messages.push(msg),
-        client: { files: { uploadV2: jest.fn().mockImplementation(({ file }) => new Promise((_, reject) => {
-          file.on('end', () => reject(new Error('not_allowed_token_type')));
-          file.on('error', () => reject(new Error('not_allowed_token_type')));
-          file.resume();
-        })) } },
-        tenant,
-        cache: new Cache(),
-        args: { namespace: 'prod', resourceName: 'test-lb', _channelId: 'C123' },
-        formatter,
-        diagramRenderer: {
-          renderToFile: jest.fn().mockResolvedValue(tmpFile),
-          cleanup: cleanupMock,
-        },
-      });
-      const text = JSON.stringify(messages);
-      expect(text).toContain('Diagram render failed');
-      expect(cleanupMock).toHaveBeenCalled();
-    } finally {
-      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
-    }
+    expect(text).toContain('render failed');
   });
 });

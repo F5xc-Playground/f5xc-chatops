@@ -5,7 +5,7 @@ const { Cache } = require('./core/cache');
 const { createTenantProfile } = require('./core/xc-client');
 const { AIAssistant } = require('./core/ai-assistant');
 const { NLPEngine } = require('./core/nlp-engine');
-const { DiagramRenderer } = require('./core/diagram-renderer');
+const { GraphvizRenderer } = require('./core/diagram-renderer-graphviz');
 const formatter = require('./core/slack-formatter');
 const { loadCommands } = require('./loader');
 const { log } = require('./core/logger');
@@ -52,7 +52,7 @@ async function start() {
     apiToken: config.xcApiToken,
   });
   const aiAssistant = new AIAssistant(tenant.client);
-  const diagramRenderer = new DiagramRenderer();
+  const diagramRenderer = new GraphvizRenderer();
 
   // Startup: whoami
   log('info', 'Fetching whoami...');
